@@ -4,7 +4,7 @@
 #include <stdint.h>
 #include "shell.h"
 
-0b1011
+
 
 /* Máscaras útiles para extraer campos de instrucciones */
 #define OPCODE_MASK      0xFFFFFFFF
@@ -41,7 +41,7 @@
 /* Códigos de operación (opcodes) */
 #define HLT_OPCODE       0x6A2
 #define ADDS_EXT_OPCODE  0xAB000000
-#define ADDS_IMM_OPCODE  0x91000000
+#define ADDS_IMM_OPCODE  0b10010001
 #define SUBS_EXT_OPCODE  0xEB000000
 #define SUBS_IMM_OPCODE  0xD1000000
 #define ANDS_OPCODE      0xEA000000
@@ -66,6 +66,7 @@
 #define ADD_EXT_OPCODE   0x8B000000
 #define ADD_IMM_OPCODE   0x91000000
 
+
 // /* Códigos de condición para B.cond */
 // #define EQ               0x0
 // #define NE               0x1
@@ -73,3 +74,33 @@
 // #define LT               0xB
 // #define GE               0xA
 // #define LE               0xD
+
+
+/* Códigos de operación (opcodes) */
+#define ADD_IMM_OP  0b10010001
+#define ADD_EXT_OP  0b10001011001
+// #define ADD_SR_OP   0b10001011  NO PUSIMOS ADD SHIFTED REGISTER NINGUNO D ESOS 
+#define ADDS_EXT_OP 0b10101011001
+#define ADDS_IMM_OP 0b10110001
+
+
+void update_flags(int64_t result) {
+    NEXT_STATE.FLAG_N = (result < 0) ? 1 : 0;
+    NEXT_STATE.FLAG_Z = (result == 0) ? 1 : 0;
+}
+
+/*
+ * Función principal para procesar una instrucción
+ */
+void process_instruction() {
+    uint32_t instruction;
+    uint32_t opcode;
+    uint32_t rd, rn, rm, shamt;
+    int64_t imm;
+    int64_t offset;
+    uint64_t addr;
+    
+    /* Obtener la instrucción actual de la memoria */
+    instruction = mem_read_32(CURRENT_STATE.PC);
+    printf("Instrucción: %x\n", instruction);
+}
