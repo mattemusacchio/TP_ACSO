@@ -18,6 +18,11 @@
 #define EOR_SR_OP   0b11001010000
 #define ORR_SR_OP   0b10101010000
 
+// Declaraciones de funciones
+void update_flags(int64_t result);
+uint64_t zero_extend(uint32_t shift, uint32_t imm12);
+void add_immediate(uint32_t instruction, int update_flag);
+void subs_immediate(uint32_t instruction, int update_flag);
 
 void process_instruction() {
     uint32_t instruction;
@@ -74,6 +79,7 @@ void add_immediate(uint32_t instruction, int update_flag){
     if (update_flag == 1){ 
         update_flags(result);
     }
+    NEXT_STATE.PC = CURRENT_STATE.PC + 4;
 }
 
 void subs_immediate(uint32_t instruction, int update_flag){
@@ -88,7 +94,6 @@ void subs_immediate(uint32_t instruction, int update_flag){
     if (update_flag == 1){ 
         update_flags(result);
     }
+    NEXT_STATE.PC = CURRENT_STATE.PC + 4;
 }
-
-
 
