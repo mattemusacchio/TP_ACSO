@@ -38,34 +38,6 @@
 #define N_SHIFT          21
 #define ADDR_SHIFT       0
 
-/* Códigos de operación (opcodes) */
-#define HLT_OPCODE       0x6A2
-#define ADDS_EXT_OPCODE  0xAB000000
-#define ADDS_IMM_OPCODE  0b10010001
-#define SUBS_EXT_OPCODE  0xEB000000
-#define SUBS_IMM_OPCODE  0xD1000000
-#define ANDS_OPCODE      0xEA000000
-#define EOR_OPCODE       0xCA000000
-#define ORR_OPCODE       0xAA000000
-#define B_OPCODE         0x14000000
-#define BR_OPCODE        0xD61F0000
-#define BCOND_OPCODE     0x54000000
-#define LSL_OPCODE       0xD3400000
-#define LSR_OPCODE       0xD340FC00
-#define STUR_OPCODE      0xF8000000
-#define STURB_OPCODE     0x38000000
-#define STURH_OPCODE     0x78000000
-#define LDUR_OPCODE      0xF8400000
-#define LDURB_OPCODE     0x38400000
-#define LDURH_OPCODE     0x78400000
-#define MOVZ_OPCODE      0xD2800000
-#define CBZ_OPCODE       0xB4000000
-#define CBNZ_OPCODE      0xB5000000
-#define CMP_OPCODE       0xEB00001F
-#define MUL_OPCODE       0x9B000000
-#define ADD_EXT_OPCODE   0x8B000000
-#define ADD_IMM_OPCODE   0x91000000
-
 
 // /* Códigos de condición para B.cond */
 // #define EQ               0x0
@@ -77,18 +49,23 @@
 
 
 /* Códigos de operación (opcodes) */
-#define ADD_IMM_OP  0b10010001
 #define ADD_EXT_OP  0b10001011001
-// #define ADD_SR_OP   0b10001011  NO PUSIMOS ADD SHIFTED REGISTER NINGUNO D ESOS 
-#define ADDS_EXT_OP 0b10101011001
+#define ADD_IMM_OP  0b10010001
+#define ADDS_EXT_OP 0b10101011000
 #define ADDS_IMM_OP 0b10110001
-
+#define SUBS_EXT_OP 0b11101011000
+#define SUBS_IMM_OP 0b11110001
+#define HLT_OP      0b11010100010
+#define CMP_EXT_OP  0b11101011001
+// #define CMP_IMM_OP  0b11110001 ??
+#define ANDS_SR_OP  0b11101010000
+#define EOR_SR_OP   0b11001010000
+#define ORR_SR_OP   0b10101010000
 
 void update_flags(int64_t result) {
     NEXT_STATE.FLAG_N = (result < 0) ? 1 : 0;
     NEXT_STATE.FLAG_Z = (result == 0) ? 1 : 0;
 }
-
 /*
  * Función principal para procesar una instrucción
  */
