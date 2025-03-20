@@ -33,10 +33,13 @@ void process_instruction() {
         uint32_t opcode = (instruction >> (32 - length)) & ((1 << length) - 1);
 
         if(opcode == ADD_IMM_OP) {
-            uintadd_immediate(instruction, 0);
+            add_immediate(instruction, 0);
         }
         if (opcode == ADDS_IMM_OP) {
             add_immediate(instruction, 1);
+        }
+        if (opcode == SUBS_IMM_OP) {
+            subs_immediate(instruction, 1);
         }
     }
 }
@@ -67,6 +70,20 @@ void add_immediate(uint32_t instruction, int update_flag){
     uint64_t operand1 = CURRENT_STATE.REGS[rn];
     uint64_t result = operand1 + imm;
     // decia add with carry con op1 op2 y un 0, o sea q el carry in es 0, hace falta implementar adc o ya con el + ta bien?
+    NEXT_STATE.REGS[rd] = result;
+    if (update_flag == 1){ 
+        update_flags(result);
+    }
+}
+
+void subs_immediate(uint32_t instruction, int update_flag){
+    uint32_t rd = instruction & 0b11111;
+    uint32_t rn = (instruction >> 5) & 0b11111;
+    uint32_t shift = (instruction >> 22) & 0b11;
+    uint32_t imm12 = (instruction >> 10) & 0b111111111111;
+    uint64_t imm = zero_extend(shift, imm12);
+    uint64_t operand1 = CURRENT_STATE.REGS[rn];
+    uint64_t result = operand1 - imm;
     NEXT_STATE.REGS[rd] = result;
     if (update_flag == 1){ 
         update_flags(result);
