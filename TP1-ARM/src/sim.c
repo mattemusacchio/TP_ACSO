@@ -46,6 +46,9 @@ void process_instruction() {
         if (opcode == SUBS_IMM_OP) {
             subs_immediate(instruction, 1);
         }
+        if( opcode == HLT_OP) {
+            halt(instruction);
+        }
     }
 }
 
@@ -66,10 +69,10 @@ uint64_t zero_extend(uint32_t shift, uint32_t imm12){
 }
 
 void add_immediate(uint32_t instruction, int update_flag){
-    uint32_t rd = instruction & 0b11111;
-    uint32_t rn = (instruction >> 5) & 0b11111;
-    uint32_t shift = (instruction >> 22) & 0b11;
-    uint32_t imm12 = (instruction >> 10) & 0b111111111111;
+    uint16_t rd = instruction & 0b11111;
+    uint16_t rn = (instruction >> 5) & 0b11111;
+    uint16_t shift = (instruction >> 22) & 0b11;
+    uint16_t imm12 = (instruction >> 10) & 0b111111111111;
     uint64_t imm = zero_extend(shift, imm12);
     // preguntar por stack pointer porq no esta dentro de la estructura del cpu, no se si debo manejarlo como caso aparte
     uint64_t operand1 = CURRENT_STATE.REGS[rn];
@@ -83,10 +86,10 @@ void add_immediate(uint32_t instruction, int update_flag){
 }
 
 void subs_immediate(uint32_t instruction, int update_flag){
-    uint32_t rd = instruction & 0b11111;
-    uint32_t rn = (instruction >> 5) & 0b11111;
-    uint32_t shift = (instruction >> 22) & 0b11;
-    uint32_t imm12 = (instruction >> 10) & 0b111111111111;
+    uint16_t rd = instruction & 0b11111;
+    uint16_t rn = (instruction >> 5) & 0b11111;
+    uint16_t shift = (instruction >> 22) & 0b11;
+    uint16_t imm12 = (instruction >> 10) & 0b111111111111;
     uint64_t imm = zero_extend(shift, imm12);
     uint64_t operand1 = CURRENT_STATE.REGS[rn];
     uint64_t result = operand1 - imm;
@@ -96,4 +99,9 @@ void subs_immediate(uint32_t instruction, int update_flag){
     }
     NEXT_STATE.PC = CURRENT_STATE.PC + 4;
 }
+
+void halt(uint32_t instruction){
+    RUN_BIT = 0;
+}
+
 
