@@ -80,23 +80,27 @@ void process_instruction() {
     /* Obtener la instrucción actual de la memoria */
     instruction = mem_read_32(CURRENT_STATE.PC);
     printf("Instrucción: %x\n", instruction);
-    // ACA TENDRIA Q HABER FUNCION PARA LEER EL OPCODE uint32_t opcode = (instruction >> 24) & 0b11111111;
-    if(opcode == ADD_IMM_OP) {
-        uint32_t rd = instruction & 0b11111;
-        uint32_t rn = (instruction >> 5) & 0b11111;
-        uint32_t shift = (instruction >> 22) & 0b11;
-        uint32_t imm12 = (instruction >> 10) & 0b111111111111;
 
-        uint64_t imm;
-        if (shift == 0b00) {
-            imm = (uint64_t)imm12;
-        } else if (shift == 0b01){
-            imm = (uint64_t)imm12 << 12;
-        }
-     
-        uint64_t operand1 = CURRENT_STATE.REGS[rn];
-        uint64_t result = operand1 + imm;
+    for (int length = 11; length >= 6; length--) { 
+        uint32_t opcode = (instruction >> (32 - length)) & ((1 << length) - 1);
         
-        NEXT_STATE.REGS[rd] = result;
+        if(opcode == ADD_IMM_OP) {
+            uint32_t rd = instruction & 0b11111;
+            uint32_t rn = (instruction >> 5) & 0b11111;
+            uint32_t shift = (instruction >> 22) & 0b11;
+            uint32_t imm12 = (instruction >> 10) & 0b111111111111;
+
+            uint64_t imm;
+            if (shift == 0b00) {
+                imm = (uint64_t)imm12;
+            } else if (shift == 0b01){
+                imm = (uint64_t)imm12 << 12;
+            }
+        
+            uint64_t operand1 = CURRENT_STATE.REGS[rn];
+            uint64_t result = operand1 + imm;
+            
+            NEXT_STATE.REGS[rd] = result;
+        }
     }
 }
