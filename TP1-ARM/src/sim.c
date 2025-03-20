@@ -23,6 +23,10 @@ void update_flags(int64_t result);
 uint64_t zero_extend(uint32_t shift, uint32_t imm12);
 void add_immediate(uint32_t instruction, int update_flag);
 void subs_immediate(uint32_t instruction, int update_flag);
+void halt(uint32_t instruction);
+void adds_ext(uint32_t instruction);
+void subs_ext(uint32_t instruction);
+
 
 void process_instruction() {
     uint32_t instruction;
@@ -43,8 +47,14 @@ void process_instruction() {
         if (opcode == ADDS_IMM_OP) {
             add_immediate(instruction, 1);
         }
+        if (opcode == ADDS_EXT_OP) {
+            adds_ext(instruction);
+        }
         if (opcode == SUBS_IMM_OP) {
             subs_immediate(instruction, 1);
+        }
+        if (opcode == SUBS_EXT_OP) {
+            subs_ext(instruction);
         }
         if( opcode == HLT_OP) {
             halt(instruction);
@@ -104,4 +114,33 @@ void halt(uint32_t instruction){
     RUN_BIT = 0;
 }
 
+void adds_ext(uint32_t instruction) {
+    uint32_t rd = instruction & 0b11111;
+    uint32_t rn = (instruction >> 5) & 0b11111;
+    uint32_t rm = (instruction >> 16) & 0b11111;
+    
+    uint64_t operand1 = CURRENT_STATE.REGS[rn];
+    uint64_t operand2 = CURRENT_STATE.REGS[rm];
+    
+    uint64_t result = operand1 + operand2;
+    
+    NEXT_STATE.REGS[rd] = result;
+    update_flags(result);
+    NEXT_STATE.PC = CURRENT_STATE.PC + 4;
+}
+
+void subs_ext(uint32_t instruction) {
+    uint32_t rd = instruction & 0b11111;
+    uint32_t rn = (instruction >> 5) & 0b11111;
+    uint32_t rm = (instruction >> 16) & 0b11111;
+    
+    uint64_t operand1 = CURRENT_STATE.REGS[rn];
+    uint64_t operand2 = CURRENT_STATE.REGS[rm];
+    
+    uint64_t result = operand1 - operand2;
+    
+    NEXT_STATE.REGS[rd] = result;
+    update_flags(result);
+    NEXT_STATE.PC = CURRENT_STATE.PC + 4;
+}
 

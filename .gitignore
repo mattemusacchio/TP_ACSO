@@ -1,0 +1,25 @@
+# Ignorar archivos específicos
+simrama.c
+TP1-ARM/src/sim
+TP1-ARM/src/dumpsim
+TP1-ARM/src/simrama.c
+
+# Ignorar archivos compilados
+*.o
+*.out
+*.exe
+
+# Ignorar archivos temporales
+*~
+.*.swp
+.DS_Store
+
+# Ignorar directorios de construcción
+/build/
+/bin/
+/obj/
+
+# Ignorar archivos de configuración de IDE
+.vscode/
+.idea/
+*.sublime-*
