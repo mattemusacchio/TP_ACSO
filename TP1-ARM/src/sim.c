@@ -112,6 +112,7 @@ void subs_immediate(uint32_t instruction, int update_flag){
 
 void halt(uint32_t instruction){
     RUN_BIT = 0;
+    NEXT_STATE.PC = CURRENT_STATE.PC + 4;
 }
 
 void adds_ext(uint32_t instruction) {
