@@ -21,11 +21,9 @@
 // Declaraciones de funciones
 void update_flags(int64_t result);
 uint64_t zero_extend(uint32_t shift, uint32_t imm12);
-void add_immediate(uint32_t instruction, int update_flag);
-void subs_immediate(uint32_t instruction, int update_flag);
+void add_subs_immediate(uint32_t instruction, int update_flag, int addition);
 void halt(uint32_t instruction);
-void adds_ext(uint32_t instruction);
-void subs_ext(uint32_t instruction);
+void adds_subs_ext(uint32_t instruction, int addition);
 
 
 void process_instruction() {
@@ -42,19 +40,19 @@ void process_instruction() {
         uint32_t opcode = (instruction >> (32 - length)) & ((1 << length) - 1);
 
         if(opcode == ADD_IMM_OP) {
-            add_immediate(instruction, 0);
+            add_subs_immediate(instruction, 0, 1);
         }
         if (opcode == ADDS_IMM_OP) {
-            add_immediate(instruction, 1);
+            add_subs_immediate(instruction, 1, 1);
         }
         if (opcode == ADDS_EXT_OP) {
-            adds_ext(instruction);
+            adds_subs_ext(instruction, 1);
         }
         if (opcode == SUBS_IMM_OP) {
-            subs_immediate(instruction, 1);
+            add_subs_immediate(instruction, 1, 0);
         }
         if (opcode == SUBS_EXT_OP) {
-            subs_ext(instruction);
+            adds_subs_ext(instruction, 0);
         }
         if( opcode == HLT_OP) {
             halt(instruction);
@@ -78,31 +76,20 @@ uint64_t zero_extend(uint32_t shift, uint32_t imm12){
     return imm;
 }
 
-void add_immediate(uint32_t instruction, int update_flag){
+void add_subs_immediate(uint32_t instruction, int update_flag, int addition){
     uint16_t rd = instruction & 0b11111;
     uint16_t rn = (instruction >> 5) & 0b11111;
     uint16_t shift = (instruction >> 22) & 0b11;
     uint16_t imm12 = (instruction >> 10) & 0b111111111111;
     uint64_t imm = zero_extend(shift, imm12);
-    // preguntar por stack pointer porq no esta dentro de la estructura del cpu, no se si debo manejarlo como caso aparte
     uint64_t operand1 = CURRENT_STATE.REGS[rn];
-    uint64_t result = operand1 + imm;
-    // decia add with carry con op1 op2 y un 0, o sea q el carry in es 0, hace falta implementar adc o ya con el + ta bien?
-    NEXT_STATE.REGS[rd] = result;
-    if (update_flag == 1){ 
-        update_flags(result);
+    uint64_t result;
+    if (addition == 1){ 
+        result = operand1 + imm;
     }
-    NEXT_STATE.PC = CURRENT_STATE.PC + 4;
-}
-
-void subs_immediate(uint32_t instruction, int update_flag){
-    uint16_t rd = instruction & 0b11111;
-    uint16_t rn = (instruction >> 5) & 0b11111;
-    uint16_t shift = (instruction >> 22) & 0b11;
-    uint16_t imm12 = (instruction >> 10) & 0b111111111111;
-    uint64_t imm = zero_extend(shift, imm12);
-    uint64_t operand1 = CURRENT_STATE.REGS[rn];
-    uint64_t result = operand1 - imm;
+    else if (addition == 0){
+        result = operand1 - imm;
+    }
     NEXT_STATE.REGS[rd] = result;
     if (update_flag == 1){ 
         update_flags(result);
@@ -115,33 +102,23 @@ void halt(uint32_t instruction){
     NEXT_STATE.PC = CURRENT_STATE.PC + 4;
 }
 
-void adds_ext(uint32_t instruction) {
+void adds_subs_ext(uint32_t instruction, int addition) {
     uint32_t rd = instruction & 0b11111;
     uint32_t rn = (instruction >> 5) & 0b11111;
     uint32_t rm = (instruction >> 16) & 0b11111;
     
     uint64_t operand1 = CURRENT_STATE.REGS[rn];
     uint64_t operand2 = CURRENT_STATE.REGS[rm];
-    
-    uint64_t result = operand1 + operand2;
-    
+    uint64_t result;
+    if (addition == 1){
+        result = operand1 + operand2;
+    }
+    else if (addition == 0) {
+        result = operand1 - operand2;
+    }
     NEXT_STATE.REGS[rd] = result;
     update_flags(result);
     NEXT_STATE.PC = CURRENT_STATE.PC + 4;
 }
 
-void subs_ext(uint32_t instruction) {
-    uint32_t rd = instruction & 0b11111;
-    uint32_t rn = (instruction >> 5) & 0b11111;
-    uint32_t rm = (instruction >> 16) & 0b11111;
-    
-    uint64_t operand1 = CURRENT_STATE.REGS[rn];
-    uint64_t operand2 = CURRENT_STATE.REGS[rm];
-    
-    uint64_t result = operand1 - operand2;
-    
-    NEXT_STATE.REGS[rd] = result;
-    update_flags(result);
-    NEXT_STATE.PC = CURRENT_STATE.PC + 4;
-}
 
