@@ -13,7 +13,6 @@
 #define SUBS_IMM_OP 0b11110001
 #define HLT_OP      0b11010100010
 #define CMP_EXT_OP  0b11101011001
-// #define CMP_IMM_OP  0b11110001 ??
 #define ANDS_SR_OP  0b11101010000
 #define EOR_SR_OP   0b11001010000
 #define ORR_SR_OP   0b10101010000
@@ -21,9 +20,10 @@
 // Declaraciones de funciones
 void update_flags(int64_t result);
 uint64_t zero_extend(uint32_t shift, uint32_t imm12);
-void add_subs_immediate(uint32_t instruction, int update_flag, int addition);
+void add_immediate(uint32_t instruction, int update_flag);
 void halt(uint32_t instruction);
 void adds_subs_ext(uint32_t instruction, int addition);
+void subs_cmp_immediate(uint32_t instruction, int update_flag);
 
 
 void process_instruction() {
@@ -40,16 +40,16 @@ void process_instruction() {
         uint32_t opcode = (instruction >> (32 - length)) & ((1 << length) - 1);
 
         if(opcode == ADD_IMM_OP) {
-            add_subs_immediate(instruction, 0, 1);
+            add_immediate(instruction, 0);
         }
         if (opcode == ADDS_IMM_OP) {
-            add_subs_immediate(instruction, 1, 1);
+            add_immediate(instruction, 1);
         }
         if (opcode == ADDS_EXT_OP) {
             adds_subs_ext(instruction, 1);
         }
         if (opcode == SUBS_IMM_OP) {
-            add_subs_immediate(instruction, 1, 0);
+            subs_cmp_immediate(instruction, 1);
         }
         if (opcode == SUBS_EXT_OP) {
             adds_subs_ext(instruction, 0);
@@ -76,20 +76,14 @@ uint64_t zero_extend(uint32_t shift, uint32_t imm12){
     return imm;
 }
 
-void add_subs_immediate(uint32_t instruction, int update_flag, int addition){
+void add_immediate(uint32_t instruction, int update_flag){
     uint16_t rd = instruction & 0b11111;
     uint16_t rn = (instruction >> 5) & 0b11111;
     uint16_t shift = (instruction >> 22) & 0b11;
     uint16_t imm12 = (instruction >> 10) & 0b111111111111;
     uint64_t imm = zero_extend(shift, imm12);
     uint64_t operand1 = CURRENT_STATE.REGS[rn];
-    uint64_t result;
-    if (addition == 1){ 
-        result = operand1 + imm;
-    }
-    else if (addition == 0){
-        result = operand1 - imm;
-    }
+    uint64_t result = operand1 + imm;
     NEXT_STATE.REGS[rd] = result;
     if (update_flag == 1){ 
         update_flags(result);
@@ -121,4 +115,19 @@ void adds_subs_ext(uint32_t instruction, int addition) {
     NEXT_STATE.PC = CURRENT_STATE.PC + 4;
 }
 
-
+void subs_cmp_immediate(uint32_t instruction, int update_flag){
+    uint16_t rd = instruction & 0b11111;
+    uint16_t rn = (instruction >> 5) & 0b11111;
+    uint16_t shift = (instruction >> 22) & 0b11;
+    uint16_t imm12 = (instruction >> 10) & 0b111111111111;
+    uint64_t imm = zero_extend(shift, imm12);
+    uint64_t operand1 = CURRENT_STATE.REGS[rn];
+    uint64_t result = operand1 - imm;
+    if (rd != 31){
+        NEXT_STATE.REGS[rd] = result;
+    }
+    if (update_flag == 1){ 
+        update_flags(result);
+    }
+    NEXT_STATE.PC = CURRENT_STATE.PC + 4;
+}
