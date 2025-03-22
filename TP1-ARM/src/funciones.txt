@@ -1,0 +1,166 @@
+Instrucciones a implementar 
+
+ 
+ANDS (Shifted Register) 
+ands X0, X1, X2 (descripción: X0 = X1 & X2, luego updatear flags) 
+En el opcode se considerar que shift y N son siempre ceros, por lo que se chequean los bits 
+<31:21> 
+No se tiene que implementar el shift 
+ 
+EOR (Shifted Register) 
+eor X0, X1, X2 (descripción: X0 = X1 ^ X2) 
+En el opcode se considerar que shift y N son siempre ceros, por lo que se chequean los bits 
+<31:21> 
+No se tiene que implementar el shift 
+ 
+ORR (Shifted Register) 
+orr X0, X1, X2 (descripción: X0 = X1 | X2) 
+En el opcode se considerar que shift y N son siempre ceros, por lo que se chequean los bits 
+<31:21> 
+No se tiene que implementar el shift 
+ 
+B 
+b target:  
+. 
+. 
+target: 
+(descripción:  saltar  a  la  instrucción  de  target,  el  target  se  calcula  relativo  a  donde  está 
+apuntando  el  PC,  así  que  puede  ser  positivo  o  negativo  el salto, prestar especial atención. 
+Imm26:'00 quiere decir, el immediate seguido de dos bits siendo cero, osea un numero de 28 
+bits.) 
+ 
+BR 
+br X1 (descripción: saltar a la dirección guardada en el registro X1) 
+ 
+ 
+ 
+Debajo hay distintos casos de B.Cond, 
+Todas  tienen  el  mismo opcode, se diferencian con el campo de cond los distintos casos se 
+encuentran en la página 138-139 
+ 
+BEQ (B.Cond) 
+cmp X1,X2 
+beq target 
+. 
+. 
+target 
+(descripción: salto a target si X1 == X2, se valida el caso con los flags. Si requiere flags C o V, 
+asumir que son cero. Vale para todos los b.conditional. Esta instrucción es un caso de b.cond) 
+ 
+BNE (B.Cond) 
+cmp X1,X2 
+bne target 
+. 
+. 
+target 
+(descripción: salto a target si X1 != X2, se valida el caso con los flags. Si requiere flags C o V, 
+asumir que son cero. Vale para todos los b.conditional. Esta instrucción es un caso de b.cond) 
+ 
+BGT (B.Cond) 
+cmp X1,X2 
+bgt target 
+. 
+. 
+target 
+(descripción: salto a target si X1 > X2, se valida el caso con los flags. Si requiere flags C o V, 
+asumir que son cero. Vale para todos los b.conditional. Esta instrucción es un caso de b.cond) 
+ 
+BLT (B.Cond) 
+cmp X1,X2 
+blt target 
+. 
+. 
+target 
+(descripción: salto a target si X1 < X2, se valida el caso con los flags. Si requiere flags C o V, 
+asumir que son cero. Vale para todos los b.conditional. Esta instrucción es un caso de b.cond) 
+ 
+BGE (B.Cond) 
+cmp X1,X2 
+bge target 
+. 
+. 
+target 
+(descripción: salto a target si X1 >= X2, se valida el caso con los flags. Si requiere flags C o V, 
+asumir que son cero. Vale para todos los b.conditional. Esta instrucción es un caso de b.cond) 
+ 
+BLE (B.Cond) 
+cmp X1,X2 
+ble target 
+. 
+. 
+target 
+(descripción: salto a target si X1 <= X2, se valida el caso con los flags. Si requiere flags C o V, 
+asumir que son cero. Vale para todos los b.conditional. Esta instrucción es un caso de b.cond) 
+ 
+LSL (Immediate) 
+lsl X4, X3, 4 (descripción: Logical left shift (X4 = X3 << 4 )) 
+ 
+LSR (Immediate) 
+lsr X4, X3, 4 (descripción: Logical right shift (X4 = X3 >> 4)) 
+ 
+STUR -  
+stur X1, [X2, #0x10] (descripción: M[X2 + 0x10] = X1) 
+Acuerdense que en el simulador la memoria empieza en 0x10000000, ver especificaciones, no 
+cambia la implementación pero si el testeo. 
+ 
+STURB 
+sturb X1, [X2, #0x10] (descripción: M[X2 + 0x10](7:0) = X1(7:0), osea los primeros 8 bits del 
+registro  son  guardados  en  los  primeros  8  bits  guardados  en  la  dirección  de  memoria). 
+Importante acordarse que la memoria es little endian en Arm.  
+Acuerdense que en el simulador la memoria empieza en 0x10000000, ver especificaciones, no 
+cambia la implementación pero si el testeo. 
+ 
+STURH 
+sturh W1, [X2, #0x10] (descripción: M[X2 + 0x10](15:0) = X1(15:0), osea los primeros 16 bits 
+del  registro  son guardados en los primeros 16 bits guardados en la   dirección de memoria). 
+Importante acordarse que la memoria es little endian en Arm. 
+Acuerdense que en el simulador la memoria empieza en 0x10000000, ver especificaciones, no 
+cambia la implementación pero si el testeo. 
+ 
+LDUR 
+ldur X1, [X2, #0x10] (descripción: X1 = M[X2 + 0x10]) 
+Acuerdense que en el simulador la memoria empieza en 0x10000000, ver especificaciones, no 
+cambia la implementación pero si el testeo. 
+ 
+LDURH 
+ldurh  W1,  [X2,  #0x10]  (descripción:  X1=  48’b0,  M[X2  +  0x10](15:0),  osea  48  ceros  y  los 
+primeros 16 bits guardados en la dirección de memoria) 
+Acuerdense que en el simulador la memoria empieza en 0x10000000, ver especificaciones, no 
+cambia la implementación pero si el testeo. 
+ 
+LDURB 
+ldurb  W1,  [X2,  #0x10]  (descripción:  X1=  56’b0,  M[X2  +  0x10](7:0),  osea  56  ceros  y  los 
+primeros 8 bits guardados en la dirección de memoria) 
+Acuerdense que en el simulador la memoria empieza en 0x10000000, ver especificaciones, no 
+cambia la implementación pero si el testeo. 
+ 
+MOVZ 
+movz X1, 10 (descripción: X1 = 10, Solo hay que implementar la condición donde hw = 0, osea 
+shift es cero.) 
+ 
+ 
+ADD (Extended Register & Immediate) 
+Immediate: add X0, X1, 3 (descripción: X0 = X1 + 3) 
+El caso de shift == 01 se debe implementar, osea moviendo el imm12, 12 bits a la izquierda. 
+También se debe implementar shift 00, pero no el caso de ReservedValue. 
+ 
+Extended Register: add X0 = X1, X2 (descripción: X0 = X1 + X2) 
+ 
+ 
+ 
+MUL 
+mul X0, X1, X2 (descripción X0 = X1 * X2) 
+ 
+ 
+ 
+CBZ 
+cbz X3, label 
+. 
+. 
+label (descripción: saltar a label, si X3 es 0) 
+ 
+CBNZ 
+cbnz X3, label 
+. 
+. 
+label (descripción: saltar a label, si X3 no es 0)
