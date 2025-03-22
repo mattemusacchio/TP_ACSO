@@ -16,6 +16,9 @@
 #define ANDS_SR_OP  0b11101010000
 #define EOR_SR_OP   0b11001010000
 #define ORR_SR_OP   0b10101010000
+#define B_OP   0b000101
+#define BR_OP   0b11010110000
+#define B_COND_OP   0b01010100
 
 // Declaraciones de funciones
 void update_flags(int64_t result);
@@ -24,6 +27,9 @@ void halt(uint32_t instruction);
 void adds_subs_ext(uint32_t instruction, int update_flag, int addition);
 void adds_subs_immediate(uint32_t instruction, int update_flag, int addition);
 void logical_shifted_register(uint32_t instruction, int op);
+void branch(uint32_t instruction);
+void branch_register(uint32_t instruction);
+void branch_conditional(uint32_t instruction);
 
 
 void process_instruction() {
@@ -31,6 +37,9 @@ void process_instruction() {
     uint32_t opcode;
     uint32_t rd, rn, rm, shamt;
     int64_t imm;
+    int64_t imm19;
+    int64_t imm26;
+    int64_t cond;
     int64_t offset;
     uint64_t addr;
 
@@ -67,6 +76,15 @@ void process_instruction() {
             case ORR_SR_OP:
                 logical_shifted_register(instruction, 2);
                 break;
+            case B_OP:
+                branch(instruction);
+                return;
+            case BR_OP:
+                branch_register(instruction);
+                return;
+            case B_COND_OP:
+                branch_conditional(instruction);
+                return;
             case HLT_OP:
                 halt(instruction);
                 break;
@@ -166,6 +184,68 @@ void logical_shifted_register(uint32_t instruction, int op) {
     }
     if (op == 0){
     update_flags(result);
+    }
+}
+
+void branch(uint32_t instruction) {
+    // Extraer los 26 bits del immediate
+    int32_t imm26 = instruction & 0x3FFFFFF;  // 0x3FFFFFF = 0b11111111111111111111111111
+    
+    // Si el bit más significativo de imm26 está activado (es negativo)
+    if (imm26 & 0x2000000) {  // 0x2000000 es el bit 26 (0b10000000000000000000000000)
+        imm26 |= ~0x3FFFFFF;  // Extender el signo rellenando con 1s
+    }
+    
+    // Concatenar con '00' (shift left por 2)
+    int64_t offset = ((int64_t)imm26) << 2;
+    
+    NEXT_STATE.PC = CURRENT_STATE.PC + offset;
+}
+
+void branch_register(uint32_t instruction) {
+    uint32_t rn = instruction & 0b11111;  // Extraer los 5 bits del registro
+    NEXT_STATE.PC = CURRENT_STATE.REGS[rn];
+}
+
+void branch_conditional(uint32_t instruction) {
+    uint32_t cond = instruction & 0b1111;  // Extraer los 4 bits de condición (bits [3:0])
+    
+    // Modificación aquí: necesitamos hacer la extensión de signo correctamente
+    int32_t imm19 = ((instruction >> 5) & 0x7FFFF);  // Extraer los 19 bits
+    
+    // Si el bit más significativo de imm19 está activado (es negativo)
+    if (imm19 & 0x40000) {  // 0x40000 es el bit 19 (0b100000000000000000)
+        imm19 |= ~0x7FFFF;  // Extender el signo rellenando con 1s
+    }
+    
+    int64_t offset = ((int64_t)imm19) << 2;   // Concatena con '00'
+
+    int should_branch = 0;
+    switch(cond) {
+        case 0b0000: // EQ
+            should_branch = CURRENT_STATE.FLAG_Z;
+            break;
+        case 0b0001: // NE
+            should_branch = !CURRENT_STATE.FLAG_Z;
+            break;
+        case 0b1010: // GE
+            should_branch = !CURRENT_STATE.FLAG_N;
+            break;
+        case 0b1011: // LT
+            should_branch = CURRENT_STATE.FLAG_N;
+            break;
+        case 0b1100: // GT
+            should_branch = (!CURRENT_STATE.FLAG_Z && !CURRENT_STATE.FLAG_N);
+            break;
+        case 0b1101: // LE
+            should_branch = (CURRENT_STATE.FLAG_Z || CURRENT_STATE.FLAG_N);
+            break;
+    }
+
+    if (should_branch) {
+        NEXT_STATE.PC = CURRENT_STATE.PC + offset;
+    } else {
+        NEXT_STATE.PC = CURRENT_STATE.PC + 4;
     }
 }
 
