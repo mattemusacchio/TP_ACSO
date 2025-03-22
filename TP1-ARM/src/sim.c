@@ -23,6 +23,7 @@ uint64_t zero_extend(uint32_t shift, uint32_t imm12);
 void halt(uint32_t instruction);
 void adds_subs_ext(uint32_t instruction, int update_flag, int addition);
 void adds_subs_immediate(uint32_t instruction, int update_flag, int addition);
+void logical_shifted_register(uint32_t instruction, int op);
 
 
 void process_instruction() {
@@ -52,12 +53,19 @@ void process_instruction() {
                 adds_subs_ext(instruction, 1, 1);
                 break;
             case SUBS_IMM_OP:
-                // tambien incluye cmp
                 adds_subs_immediate(instruction, 1, 0);
                 break;
             case SUBS_EXT_OP:
-                // tambien incluye cmp
                 adds_subs_ext(instruction, 1, 0);
+                break;
+            case ANDS_SR_OP:
+                logical_shifted_register(instruction, 0);
+                break;
+            case EOR_SR_OP:
+                logical_shifted_register(instruction, 1);
+                break;
+            case ORR_SR_OP:
+                logical_shifted_register(instruction, 2);
                 break;
             case HLT_OP:
                 halt(instruction);
@@ -132,3 +140,32 @@ void adds_subs_immediate(uint32_t instruction, int update_flag, int addition){
         update_flags(result);
     }
 }
+
+void logical_shifted_register(uint32_t instruction, int op) {
+    uint32_t rd = instruction & 0b11111;
+    uint32_t rn = (instruction >> 5) & 0b11111;
+    uint32_t rm = (instruction >> 16) & 0b11111;
+    
+    uint64_t operand1 = CURRENT_STATE.REGS[rn];
+    uint64_t operand2 = CURRENT_STATE.REGS[rm];
+    uint64_t result;
+
+    // Realizar la operación lógica según el opcode
+    switch(op) {
+        case 0: // ANDS
+            result = operand1 & operand2;
+            break;
+        case 1: // EOR
+            result = operand1 ^ operand2;
+            break;
+        case 2: // ORR
+            result = operand1 | operand2;
+            break;
+        default:
+            return;
+    }
+    if (op == 0){
+    update_flags(result);
+    }
+}
+

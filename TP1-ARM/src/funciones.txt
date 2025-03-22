@@ -1,23 +1,4 @@
 Instrucciones a implementar 
-
- 
-ANDS (Shifted Register) 
-ands X0, X1, X2 (descripción: X0 = X1 & X2, luego updatear flags) 
-En el opcode se considerar que shift y N son siempre ceros, por lo que se chequean los bits 
-<31:21> 
-No se tiene que implementar el shift 
- 
-EOR (Shifted Register) 
-eor X0, X1, X2 (descripción: X0 = X1 ^ X2) 
-En el opcode se considerar que shift y N son siempre ceros, por lo que se chequean los bits 
-<31:21> 
-No se tiene que implementar el shift 
- 
-ORR (Shifted Register) 
-orr X0, X1, X2 (descripción: X0 = X1 | X2) 
-En el opcode se considerar que shift y N son siempre ceros, por lo que se chequean los bits 
-<31:21> 
-No se tiene que implementar el shift 
  
 B 
 b target:  
