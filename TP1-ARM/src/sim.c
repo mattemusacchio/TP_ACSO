@@ -131,7 +131,6 @@ void adds_subs_ext(uint32_t instruction, int update_flag, int addition) {
     if (rd != 31) {
         NEXT_STATE.REGS[rd] = result;
     }
-    
     if (update_flag == 1){
         update_flags(result);
     }
@@ -182,8 +181,11 @@ void logical_shifted_register(uint32_t instruction, int op) {
         default:
             return;
     }
-    if (op == 0){
-    update_flags(result);
+    if (rd != 31) {
+        NEXT_STATE.REGS[rd] = result;
+    }
+    if (op == 0) {
+        update_flags(result);
     }
 }
 

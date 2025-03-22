@@ -1,0 +1,18 @@
+.text
+adds X2, X0, 10
+subs X3, X2, 15
+adds X4, X3, X2
+cmp X4, X2
+ble foo
+subs X5, X4, X2
+
+bar:
+HLT 0
+
+foo:
+ands X6, X4, X2
+orr X7, X3, X5
+cmp X7, X6
+beq bar
+adds X3, X3, X2
+HLT 0
