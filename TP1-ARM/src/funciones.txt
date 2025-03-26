@@ -1,11 +1,5 @@
 Instrucciones a implementar 
 
- 
-MUL 
-mul X0, X1, X2 (descripción X0 = X1 * X2) 
- 
- 
- 
 CBZ 
 cbz X3, label 
 . 

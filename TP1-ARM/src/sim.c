@@ -27,7 +27,8 @@
 #define LDURB       0b00111000010
 #define LDURH       0b01111000010
 #define MUL         0b10011011000  
-
+#define MOVZ        0b110100101
+       
 
 // Declaraciones de funciones
 void update_flags(int64_t result);
@@ -46,6 +47,7 @@ int64_t sign_extend(int64_t value, int bits);
 void ldur(uint32_t instruction);
 void ldurbh(uint32_t instruction, int b);
 void movz(uint32_t instruction);
+void mul(uint32_t instruction);
 
 void process_instruction() {
     uint32_t instruction;
@@ -126,6 +128,9 @@ void process_instruction() {
                 break;
             case MOVZ:
                 movz(instruction);
+                break;
+            case MUL:
+                mul(instruction);
                 break;
                 
         }
@@ -436,3 +441,13 @@ void movz(uint32_t instruction) {
     // Guardamos el resultado en el registro destino
     NEXT_STATE.REGS[rd] = result;
 }
+
+void mul(uint32_t instruction){
+    uint8_t Rd = instruction & 0b11111;
+    uint8_t Rn = (instruction >> 5) & 0b11111;
+    uint8_t Rm = (instruction >> 16) & 0b11111;
+    uint64_t result;
+    result = CURRENT_STATE.REGS[Rn] * CURRENT_STATE.REGS[Rm];
+    NEXT_STATE.REGS[Rd] = result;
+}
+
