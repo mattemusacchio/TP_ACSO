@@ -1,10 +1,5 @@
 Instrucciones a implementar 
 
-CBZ 
-cbz X3, label 
-. 
-. 
-label (descripción: saltar a label, si X3 es 0) 
  
 CBNZ 
 cbnz X3, label 

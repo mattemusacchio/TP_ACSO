@@ -28,6 +28,7 @@
 #define LDURH       0b01111000010
 #define MUL         0b10011011000  
 #define MOVZ        0b110100101
+#define CBZ         0b10110100
        
 
 // Declaraciones de funciones
@@ -48,6 +49,7 @@ void ldur(uint32_t instruction);
 void ldurbh(uint32_t instruction, int b);
 void movz(uint32_t instruction);
 void mul(uint32_t instruction);
+void cbz(uint32_t instruction);
 
 void process_instruction() {
     uint32_t instruction;
@@ -131,6 +133,9 @@ void process_instruction() {
                 break;
             case MUL:
                 mul(instruction);
+                break;
+            case CBZ:
+                cbz(instruction);
                 break;
                 
         }
@@ -430,8 +435,6 @@ void ldurbh(uint32_t instruction, int b) {
     NEXT_STATE.REGS[Rt] = result_value;
 }
 
-
-
 void movz(uint32_t instruction) {
     uint8_t rd = instruction & 0b11111;         // Rd
     uint16_t imm16 = (instruction >> 5) & 0xFFFF; // imm16
@@ -451,3 +454,12 @@ void mul(uint32_t instruction){
     NEXT_STATE.REGS[Rd] = result;
 }
 
+void cbz(uint32_t instruction){
+    uint8_t Rt = instruction & 0b11111;
+    uint32_t imm = (instruction >> 5) & 0b1111111111111111111;
+    uint64_t offset = sign_extend(imm << 2, 21);
+    uint64_t operand1 = CURRENT_STATE.REGS[Rt];
+    if (operand1 == 0){
+        NEXT_STATE.PC = CURRENT_STATE.PC + offset;
+    }
+}
