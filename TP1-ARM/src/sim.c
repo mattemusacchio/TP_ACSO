@@ -99,7 +99,7 @@ void update_flags(int64_t result) {
     NEXT_STATE.FLAG_Z = (result == 0) ? 1 : 0;
 }
 
-uint64_t zero_extend(uint32_t shift, uint32_t imm12){
+uint64_t zero_extend(uint32_t shift, uint32_t imm12){ // aca si podemos usar zero extend en las signed q reciba eso q esta como 12 como un int 
     uint64_t imm;
     if (shift == 0b00) {
         imm = (uint64_t)imm12;
@@ -166,8 +166,6 @@ void logical_shifted_register(uint32_t instruction, int op) {
     uint64_t operand1 = CURRENT_STATE.REGS[rn];
     uint64_t operand2 = CURRENT_STATE.REGS[rm];
     uint64_t result;
-
-    // Realizar la operación lógica según el opcode
     switch(op) {
         case 0: // ANDS
             result = operand1 & operand2;
@@ -175,7 +173,7 @@ void logical_shifted_register(uint32_t instruction, int op) {
         case 1: // EOR
             result = operand1 ^ operand2;
             break;
-        case 2: // ORR
+        case 2: // OR
             result = operand1 | operand2;
             break;
         default:
@@ -190,37 +188,35 @@ void logical_shifted_register(uint32_t instruction, int op) {
 }
 
 void branch(uint32_t instruction) {
-    // Extraer los 26 bits del immediate
     int32_t imm26 = instruction & 0x3FFFFFF;  // 0x3FFFFFF = 0b11111111111111111111111111
     
-    // Si el bit más significativo de imm26 está activado (es negativo)
-    if (imm26 & 0x2000000) {  // 0x2000000 es el bit 26 (0b10000000000000000000000000)
-        imm26 |= ~0x3FFFFFF;  // Extender el signo rellenando con 1s
+    if ((imm26 >> 25) & 0b1) {  //chequea q el bit mas signofocativo sea 1
+        imm26 |= ~0x3FFFFFF;  // aca estamos extendiendo el immediate con 6 unos digamos q van del bit 26 al 31 (los mas signficiativos)
     }
     
-    // Concatenar con '00' (shift left por 2)
-    int64_t offset = ((int64_t)imm26) << 2;
+    int64_t offset = ((int64_t)imm26) << 2; //tenemos zero extend q funciona devolviendo un uint, podemos usarla en este caso q es int64_t?? dejamos esta linea o nos creamos una funcion zero extend para signed ints
     
     NEXT_STATE.PC = CURRENT_STATE.PC + offset;
 }
 
+
+
 void branch_register(uint32_t instruction) {
-    uint32_t rn = instruction & 0b11111;  // Extraer los 5 bits del registro
+    uint32_t rn = instruction & 0b11111;  // aca sacamos los 5 bits del registro al q hay q ir y se va para ahi
     NEXT_STATE.PC = CURRENT_STATE.REGS[rn];
 }
 
 void branch_conditional(uint32_t instruction) {
-    uint32_t cond = instruction & 0b1111;  // Extraer los 4 bits de condición (bits [3:0])
+    uint32_t cond = instruction & 0b1111;  // los primeros 4 bits de la instruccion son el condicional
     
-    // Modificación aquí: necesitamos hacer la extensión de signo correctamente
-    int32_t imm19 = ((instruction >> 5) & 0x7FFFF);  // Extraer los 19 bits
+    int32_t imm19 = ((instruction >> 5) & 0x7FFFF);  
     
-    // Si el bit más significativo de imm19 está activado (es negativo)
-    if (imm19 & 0x40000) {  // 0x40000 es el bit 19 (0b100000000000000000)
+    // lo mismo d antes d si el bit mas significativo del immm19 es 1 entonces extiende a 32 bits poniendi unos adelantes
+    if ((imm19 >> 18) & 0b1) {  
         imm19 |= ~0x7FFFF;  // Extender el signo rellenando con 1s
     }
     
-    int64_t offset = ((int64_t)imm19) << 2;   // Concatena con '00'
+    int64_t offset = ((int64_t)imm19) << 2;   //aca d nuevo estamos haciendo zero extend preguntar bien q onda si se pUede usar el otro 
 
     int should_branch = 0;
     switch(cond) {
@@ -230,13 +226,13 @@ void branch_conditional(uint32_t instruction) {
         case 0b0001: // NE
             should_branch = !CURRENT_STATE.FLAG_Z;
             break;
-        case 0b1010: // GE
+        case 0b1010: // GT
             should_branch = !CURRENT_STATE.FLAG_N;
             break;
         case 0b1011: // LT
             should_branch = CURRENT_STATE.FLAG_N;
             break;
-        case 0b1100: // GT
+        case 0b1100: // GE
             should_branch = (!CURRENT_STATE.FLAG_Z && !CURRENT_STATE.FLAG_N);
             break;
         case 0b1101: // LE
