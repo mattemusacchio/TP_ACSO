@@ -362,6 +362,9 @@ void sturb(uint32_t instruction) {
     
     address = address + offset;
     
+    // Alinear a 4 bytes
+    address = address & ~0x3;
+
     
     uint32_t current_value = mem_read_32(address);
     
