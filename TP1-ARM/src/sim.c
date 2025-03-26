@@ -384,11 +384,6 @@ void sturh(uint32_t instruction) {
     mem_write_32(address, new_value);
 }
 
-
-int64_t sign_extend(int64_t value, int bits) {
-    int64_t mask = 1LL << (bits - 1);
-    return (value ^ mask) - mask;
-}
 void ldur(uint32_t instruction) {
     uint8_t Rn = (instruction >> 5) & 0b11111;    
     uint8_t Rt = instruction & 0b11111;           
