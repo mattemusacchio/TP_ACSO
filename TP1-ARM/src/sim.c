@@ -315,24 +315,20 @@ void lslr_imm(uint32_t instruction){
     NEXT_STATE.REGS[Rd] = result;
 }
 
+
+int64_t sign_extend(int64_t value, int bits) {
+    int64_t mask = 1LL << (bits - 1);
+    return (value ^ mask) - mask;
+}
+
 void stur(uint32_t instruction) {
     uint32_t rt = instruction & 0b11111;         
     uint32_t rn = (instruction >> 5) & 0b11111;  
     uint32_t imm9 = (instruction >> 12) & 0b111111111;
 
-    int64_t offset;
-    if ((imm9 >> 8) & 0b1) {
-        offset = imm9 | ~0x1FF;
-    } else {
-        offset = imm9;
-    }
+    int64_t offset = sign_extend(imm9, 9);
     
-    uint64_t address;
-    if (rn == 31) {  // Si es SP
-        address = CURRENT_STATE.REGS[31];  // SP
-    } else {
-        address = CURRENT_STATE.REGS[rn];
-    }
+    uint64_t address = CURRENT_STATE.REGS[rn];
     
     address = address + offset;
     
@@ -346,25 +342,14 @@ void sturb(uint32_t instruction) {
     uint32_t rn = (instruction >> 5) & 0b11111;  
     uint32_t imm9 = (instruction >> 12) & 0b111111111;
 
-    int64_t offset;
-    if ((imm9 >> 8) & 0b1) {
-        offset = imm9 | ~0x1FF;
-    } else {
-        offset = imm9;
-    }
+    int64_t offset = sign_extend(imm9, 9);
     
-    uint64_t address;
-    if (rn == 31) {  // Si es SP
-        address = CURRENT_STATE.REGS[31];  // SP
-    } else {
-        address = CURRENT_STATE.REGS[rn];
-    }
+    uint64_t address = CURRENT_STATE.REGS[rn];
     
     address = address + offset;
     
     // Alinear a 4 bytes
     address = address & ~0x3;
-
     
     uint32_t current_value = mem_read_32(address);
     
@@ -382,20 +367,10 @@ void sturh(uint32_t instruction) {
     uint32_t rn = (instruction >> 5) & 0b11111;  
     uint32_t imm9 = (instruction >> 12) & 0b111111111;
     
-    int64_t offset;
-    if ((imm9 >> 8) & 0b1) {
-        offset = imm9 | ~0x1FF;
-    } else {
-        offset = imm9;
-    }
-    
-    uint64_t address;
-    if (rn == 31) {  // Si es SP
-        address = CURRENT_STATE.REGS[31];  // SP
-    } else {
-        address = CURRENT_STATE.REGS[rn];
-    }
-    
+    int64_t offset = sign_extend(imm9, 9);
+
+    uint64_t address = CURRENT_STATE.REGS[rn];
+
     address = address + offset;
     
     uint32_t current_value = mem_read_32(address);
@@ -408,6 +383,7 @@ void sturh(uint32_t instruction) {
     
     mem_write_32(address, new_value);
 }
+
 
 int64_t sign_extend(int64_t value, int bits) {
     int64_t mask = 1LL << (bits - 1);
