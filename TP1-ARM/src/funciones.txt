@@ -1,35 +1,5 @@
 Instrucciones a implementar 
  
-LSL (Immediate) 
-lsl X4, X3, 4 (descripción: Logical left shift (X4 = X3 << 4 )) 
- 
-LSR (Immediate) 
-lsr X4, X3, 4 (descripción: Logical right shift (X4 = X3 >> 4)) 
- 
-STUR -  
-stur X1, [X2, #0x10] (descripción: M[X2 + 0x10] = X1) 
-Acuerdense que en el simulador la memoria empieza en 0x10000000, ver especificaciones, no 
-cambia la implementación pero si el testeo. 
- 
-STURB 
-sturb X1, [X2, #0x10] (descripción: M[X2 + 0x10](7:0) = X1(7:0), osea los primeros 8 bits del 
-registro  son  guardados  en  los  primeros  8  bits  guardados  en  la  dirección  de  memoria). 
-Importante acordarse que la memoria es little endian en Arm.  
-Acuerdense que en el simulador la memoria empieza en 0x10000000, ver especificaciones, no 
-cambia la implementación pero si el testeo. 
- 
-STURH 
-sturh W1, [X2, #0x10] (descripción: M[X2 + 0x10](15:0) = X1(15:0), osea los primeros 16 bits 
-del  registro  son guardados en los primeros 16 bits guardados en la   dirección de memoria). 
-Importante acordarse que la memoria es little endian en Arm. 
-Acuerdense que en el simulador la memoria empieza en 0x10000000, ver especificaciones, no 
-cambia la implementación pero si el testeo. 
- 
-LDUR 
-ldur X1, [X2, #0x10] (descripción: X1 = M[X2 + 0x10]) 
-Acuerdense que en el simulador la memoria empieza en 0x10000000, ver especificaciones, no 
-cambia la implementación pero si el testeo. 
- 
 LDURH 
 ldurh  W1,  [X2,  #0x10]  (descripción:  X1=  48’b0,  M[X2  +  0x10](15:0),  osea  48  ceros  y  los 
 primeros 16 bits guardados en la dirección de memoria) 

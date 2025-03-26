@@ -24,6 +24,9 @@
 #define STURB_OP    0b00111000000
 #define STURH_OP    0b01111000000
 #define LDUR        0b11111000010
+#define LDURB       0b00111000010
+#define LDURH       0b01111000010
+
 
 
 // Declaraciones de funciones
@@ -40,6 +43,8 @@ void stur(uint32_t instruction);
 void sturb(uint32_t instruction);
 void sturh(uint32_t instruction);
 int64_t sign_extend(int64_t value, int bits);
+void ldurb(uint32_t instruction);
+void ldurh(uint32_t instruction);
 
 void process_instruction() {
     uint32_t instruction;
@@ -397,6 +402,7 @@ void sturh(uint32_t instruction) {
     // Escribir el valor actualizado
     mem_write_32(address, new_value);
 }
+
 int64_t sign_extend(int64_t value, int bits) {
     int64_t mask = 1LL << (bits - 1);
     return (value ^ mask) - mask;
@@ -416,4 +422,19 @@ void ldur(uint32_t instruction) {
     uint64_t value = lower | (upper << 32);
 
     NEXT_STATE.REGS[Rt] = value;
+}
+
+void ldurb(uint32_t instruction) {
+    uint8_t Rn = (instruction >> 5) & 0b11111;    
+    uint8_t Rt = instruction & 0b11111;           
+    int16_t imm9 = (instruction >> 12) & 0b111111111;    
+    int64_t offset = sign_extend(imm9, 9);
+    uint64_t address = (uint64_t)CURRENT_STATE.REGS[Rn] + offset;
+    uint32_t word = mem_read_32(address);
+    uint8_t byte_value = word & 0b11111111;
+    NEXT_STATE.REGS[Rt] = (uint32_t)byte_value;
+}
+
+void ldurh(uint32_t instruction){
+
 }
