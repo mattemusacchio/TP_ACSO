@@ -19,7 +19,6 @@
 #define B_OP        0b000101
 #define BR_OP       0b11010110000
 #define B_COND_OP   0b01010100
-#define LSLR_IMM    0b110100110
 #define STUR_OP     0b11111000000
 #define STURB_OP    0b00111000000
 #define STURH_OP    0b01111000000
@@ -34,10 +33,10 @@ void logical_shifted_register(uint32_t instruction, int op);
 void branch(uint32_t instruction);
 void branch_register(uint32_t instruction);
 void branch_conditional(uint32_t instruction);
-void lslr_imm(uint32_t instruction);
 void stur(uint32_t instruction);
 void sturb(uint32_t instruction);
 void sturh(uint32_t instruction);
+
 
 void process_instruction() {
     uint32_t instruction;
@@ -54,57 +53,66 @@ void process_instruction() {
 
     for (int length = 11; length >= 6; length--) { 
         uint32_t opcode = (instruction >> (32 - length)) & ((1 << length) - 1);
-
         switch(opcode) {
             case ADD_IMM_OP:
+                printf("ADD_IMM_OP\n");
                 adds_subs_immediate(instruction, 0, 1);
                 break;
             case ADDS_IMM_OP:
+                printf("ADDS_IMM_OP\n");
                 adds_subs_immediate(instruction, 1, 1);
                 break;
             case ADD_EXT_OP:
+                printf("ADD_EXT_OP\n");
                 adds_subs_ext(instruction, 0, 1);
                 break;
             case ADDS_EXT_OP:
+                printf("ADDS_EXT_OP\n");
                 adds_subs_ext(instruction, 1, 1);
                 break;
             case SUBS_IMM_OP:
                 adds_subs_immediate(instruction, 1, 0);
                 break;
             case SUBS_EXT_OP:
+                printf("SUBS_EXT_OP\n");
                 adds_subs_ext(instruction, 1, 0);
                 break;
             case ANDS_SR_OP:
                 logical_shifted_register(instruction, 0);
                 break;
             case EOR_SR_OP:
+                printf("EOR_SR_OP\n");
                 logical_shifted_register(instruction, 1);
                 break;
             case ORR_SR_OP:
+                printf("ORR_SR_OP\n");
                 logical_shifted_register(instruction, 2);
                 break;
             case B_OP:
+                printf("B_OP\n");
                 branch(instruction);
                 return;
             case BR_OP:
+                printf("BR_OP\n");
                 branch_register(instruction);
                 return;
             case B_COND_OP:
                 branch_conditional(instruction);
                 return;
             case HLT_OP:
+                printf("HLT_OP\n");
                 halt(instruction);
                 break;
-            case LSLR_IMM:
-                lslr_imm(instruction);
-                break;
             case STUR_OP:
+                printf("STUR_OP\n");
                 stur(instruction);
                 break;
             case STURB_OP:
+                printf("STURB_OP\n");
                 sturb(instruction);
                 break;
             case STURH_OP:
+                printf("STURH_OP\n");
                 sturh(instruction);
                 break;
         }
@@ -245,13 +253,13 @@ void branch_conditional(uint32_t instruction) {
         case 0b0001: // NE
             should_branch = !CURRENT_STATE.FLAG_Z;
             break;
-        case 0b1010: // GT
-            should_branch = !CURRENT_STATE.FLAG_N;
+        case 0b1010: // GE
+            should_branch = (!CURRENT_STATE.FLAG_N || CURRENT_STATE.FLAG_Z);
             break;
         case 0b1011: // LT
-            should_branch = CURRENT_STATE.FLAG_N;
+            should_branch = (!CURRENT_STATE.FLAG_Z && CURRENT_STATE.FLAG_N);
             break;
-        case 0b1100: // GE
+        case 0b1100: // GT
             should_branch = (!CURRENT_STATE.FLAG_Z && !CURRENT_STATE.FLAG_N);
             break;
         case 0b1101: // LE
@@ -264,25 +272,6 @@ void branch_conditional(uint32_t instruction) {
     } else {
         NEXT_STATE.PC = CURRENT_STATE.PC + 4;
     }
-}
-
-void lslr_imm(uint32_t instruction){
-    uint8_t N = (instruction >> 22) & 0b1;
-    uint8_t imms = (instruction >> 10) & 0b111111;
-    uint8_t Rn = (instruction >> 5) & 0b11111;
-    uint8_t Rd = instruction & 0b11111;
-    uint64_t operand1 = CURRENT_STATE.REGS[Rn]; 
-        // PREGUNTAR SI chequeo q se cumpla la condicion esa  N xq onda si es 64 si se deberia cumplir tipo asumo. 
-        uint64_t result;
-    if (N == 1 && imms != 0b111111){
-        uint8_t shift = 63 - imms;
-        result = operand1 << shift;
-    }
-    else if (N ==1 && imms == 0b111111){
-        uint8_t shift = (instruction >> 16) & 0b111111;
-        result = operand1 >> shift; 
-    }
-    NEXT_STATE.REGS[Rd] = result;
 }
 
 void stur(uint32_t instruction) {
@@ -306,13 +295,8 @@ void stur(uint32_t instruction) {
     
     address = address + offset;
     
-    // Alinear a 8 bytes
-    address = address & ~0x7;
-    
-    // Escribir los 64 bits en dos partes
-    uint64_t value = CURRENT_STATE.REGS[rt];
-    mem_write_32(address, value & 0xFFFFFFFF);        // 32 bits inferiores
-    mem_write_32(address + 4, value >> 32);           // 32 bits superiores
+    mem_write_32(address, CURRENT_STATE.REGS[rt]);
+    uint32_t value = CURRENT_STATE.REGS[rt];
 }
 
 void sturb(uint32_t instruction) {
@@ -320,6 +304,8 @@ void sturb(uint32_t instruction) {
     uint32_t rn = (instruction >> 5) & 0b11111;  
     uint32_t imm9 = (instruction >> 12) & 0b111111111;
 
+    
+
     int64_t offset;
     if ((imm9 >> 8) & 0b1) {
         offset = imm9 | ~0x1FF;
@@ -337,23 +323,10 @@ void sturb(uint32_t instruction) {
     // Sumar el offset
     address = address + offset;
     
-    // Alinear a 4 bytes
-    address = address & ~0x3;
+    // Escribir en memoria (32 bits)
+    uint32_t value = CURRENT_STATE.REGS[rt] & 0xFF;  // Tomar solo el byte menos significativo
+    mem_write_32(address, value);
     
-    // Leer el valor actual de 32 bits en esa dirección
-    uint32_t current_value = mem_read_32(address);
-    
-    // Calcular el offset del byte dentro de la palabra (0-3)
-    uint8_t byte_offset = offset & 0x3;
-    
-    // Crear una máscara para limpiar el byte específico
-    uint32_t mask = ~(0xFF << (byte_offset * 8));
-    
-    // Limpiar el byte específico y colocar el nuevo valor
-    uint32_t new_value = (current_value & mask) | ((CURRENT_STATE.REGS[rt] & 0xFF) << (byte_offset * 8));
-    
-    // Escribir el valor actualizado
-    mem_write_32(address, new_value);
 }
 
 void sturh(uint32_t instruction) {
@@ -361,6 +334,7 @@ void sturh(uint32_t instruction) {
     uint32_t rn = (instruction >> 5) & 0b11111;  
     uint32_t imm9 = (instruction >> 12) & 0b111111111;
     
+    // Extender el signo del imm9
     int64_t offset;
     if ((imm9 >> 8) & 0b1) {
         offset = imm9 | ~0x1FF;
@@ -368,6 +342,7 @@ void sturh(uint32_t instruction) {
         offset = imm9;
     }
     
+    // Calcular la dirección base
     uint64_t address;
     if (rn == 31) {  // Si es SP
         address = CURRENT_STATE.REGS[31];  // SP
@@ -381,18 +356,8 @@ void sturh(uint32_t instruction) {
     // Alinear a 4 bytes
     address = address & ~0x3;
     
-    // Leer el valor actual de 32 bits en esa dirección
-    uint32_t current_value = mem_read_32(address);
-    
-    // Calcular el offset del halfword dentro de la palabra (0 o 2)
-    uint8_t halfword_offset = (offset & 0x2) ? 16 : 0;
-    
-    // Crear una máscara para limpiar el halfword específico
-    uint32_t mask = ~(0xFFFF << halfword_offset);
-    
-    // Limpiar el halfword específico y colocar el nuevo valor
-    uint32_t new_value = (current_value & mask) | ((CURRENT_STATE.REGS[rt] & 0xFFFF) << halfword_offset);
-    
-    // Escribir el valor actualizado
-    mem_write_32(address, new_value);
+    // Escribir en memoria (32 bits)
+    uint32_t value = CURRENT_STATE.REGS[rt] & 0xFFFF;  // Tomar solo los 16 bits menos significativos
+    mem_write_32(address, value);
 }
+
