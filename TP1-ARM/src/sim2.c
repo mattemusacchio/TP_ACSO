@@ -361,3 +361,13 @@ void sturh(uint32_t instruction) {
     mem_write_32(address, value);
 }
 
+
+void movz(uint32_t instruction) {
+    uint8_t rd = instruction & 0b11111;         // Rd
+    uint16_t imm16 = (instruction >> 5) & 0xFFFF; // imm16
+
+    uint64_t result = (uint64_t)imm16;
+    
+    // Guardamos el resultado en el registro destino
+    NEXT_STATE.REGS[rd] = result;
+}
