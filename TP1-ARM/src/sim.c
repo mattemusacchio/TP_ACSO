@@ -43,8 +43,7 @@ void stur(uint32_t instruction);
 void sturb(uint32_t instruction);
 void sturh(uint32_t instruction);
 int64_t sign_extend(int64_t value, int bits);
-void ldurb(uint32_t instruction);
-void ldurh(uint32_t instruction);
+void ldurbh(uint32_t instruction, int b);
 
 void process_instruction() {
     uint32_t instruction;
@@ -117,6 +116,12 @@ void process_instruction() {
             case LDUR:
                 ldur(instruction);
                 break;
+                case LDURB:
+                    ldurbh(instruction, 1);
+                    break;
+                case LDURH:
+                    ldurbh(instruction, 0);
+                    break;
         }
     }
     CURRENT_STATE.REGS[31] = 0;
@@ -424,17 +429,14 @@ void ldur(uint32_t instruction) {
     NEXT_STATE.REGS[Rt] = value;
 }
 
-void ldurb(uint32_t instruction) {
+void ldurbh(uint32_t instruction, int b) {
     uint8_t Rn = (instruction >> 5) & 0b11111;    
     uint8_t Rt = instruction & 0b11111;           
     int16_t imm9 = (instruction >> 12) & 0b111111111;    
     int64_t offset = sign_extend(imm9, 9);
     uint64_t address = (uint64_t)CURRENT_STATE.REGS[Rn] + offset;
     uint32_t word = mem_read_32(address);
-    uint8_t byte_value = word & 0b11111111;
-    NEXT_STATE.REGS[Rt] = (uint32_t)byte_value;
+    uint32_t result_value = (b == 1) ? (word & 0b11111111) : (word & 0b1111111111111111);
+    NEXT_STATE.REGS[Rt] = result_value;
 }
 
-void ldurh(uint32_t instruction){
-
-}
