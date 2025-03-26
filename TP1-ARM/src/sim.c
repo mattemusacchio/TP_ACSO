@@ -439,12 +439,11 @@ void ldurbh(uint32_t instruction, int b) {
 }
 
 void movz(uint32_t instruction) {
-    uint8_t rd = instruction & 0b11111;         // Rd
-    uint16_t imm16 = (instruction >> 5) & 0xFFFF; // imm16
+    uint8_t rd = instruction & 0b11111;         
+    uint16_t imm16 = (instruction >> 5) & 0xFFFF; 
 
     uint64_t result = (uint64_t)imm16;
     
-    // Guardamos el resultado en el registro destino
     NEXT_STATE.REGS[rd] = result;
 }
 
