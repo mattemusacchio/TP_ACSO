@@ -43,7 +43,9 @@ void stur(uint32_t instruction);
 void sturb(uint32_t instruction);
 void sturh(uint32_t instruction);
 int64_t sign_extend(int64_t value, int bits);
+void ldur(uint32_t instruction);
 void ldurbh(uint32_t instruction, int b);
+void movz(uint32_t instruction);
 
 void process_instruction() {
     uint32_t instruction;
@@ -117,11 +119,14 @@ void process_instruction() {
                 ldur(instruction);
                 break;
             case LDURB:
-                    ldurbh(instruction, 1);
-                    break;
+                ldurbh(instruction, 1);
+                break;
             case LDURH:
-                    ldurbh(instruction, 0);
-                    break;
+                ldurbh(instruction, 0);
+                break;
+            case MOVZ:
+                movz(instruction);
+                break;
                 
         }
     }
@@ -318,10 +323,6 @@ void stur(uint32_t instruction) {
     
     address = address + offset;
     
-    // Alinear a 8 bytes
-    address = address & ~0x7;
-    
-    // Escribir los 64 bits en dos partes
     uint64_t value = CURRENT_STATE.REGS[rt];
     mem_write_32(address, value & 0xFFFFFFFF);        // 32 bits inferiores
     mem_write_32(address + 4, value >> 32);           // 32 bits superiores
@@ -346,25 +347,17 @@ void sturb(uint32_t instruction) {
         address = CURRENT_STATE.REGS[rn];
     }
     
-    // Sumar el offset
     address = address + offset;
     
-    // Alinear a 4 bytes
-    address = address & ~0x3;
     
-    // Leer el valor actual de 32 bits en esa dirección
     uint32_t current_value = mem_read_32(address);
     
-    // Calcular el offset del byte dentro de la palabra (0-3)
     uint8_t byte_offset = offset & 0x3;
     
-    // Crear una máscara para limpiar el byte específico
     uint32_t mask = ~(0xFF << (byte_offset * 8));
     
-    // Limpiar el byte específico y colocar el nuevo valor
     uint32_t new_value = (current_value & mask) | ((CURRENT_STATE.REGS[rt] & 0xFF) << (byte_offset * 8));
     
-    // Escribir el valor actualizado
     mem_write_32(address, new_value);
 }
 
@@ -387,25 +380,16 @@ void sturh(uint32_t instruction) {
         address = CURRENT_STATE.REGS[rn];
     }
     
-    // Sumar el offset
     address = address + offset;
     
-    // Alinear a 4 bytes
-    address = address & ~0x3;
-    
-    // Leer el valor actual de 32 bits en esa dirección
     uint32_t current_value = mem_read_32(address);
     
-    // Calcular el offset del halfword dentro de la palabra (0 o 2)
     uint8_t halfword_offset = (offset & 0x2) ? 16 : 0;
     
-    // Crear una máscara para limpiar el halfword específico
     uint32_t mask = ~(0xFFFF << halfword_offset);
     
-    // Limpiar el halfword específico y colocar el nuevo valor
     uint32_t new_value = (current_value & mask) | ((CURRENT_STATE.REGS[rt] & 0xFFFF) << halfword_offset);
     
-    // Escribir el valor actualizado
     mem_write_32(address, new_value);
 }
 
@@ -441,3 +425,14 @@ void ldurbh(uint32_t instruction, int b) {
     NEXT_STATE.REGS[Rt] = result_value;
 }
 
+
+
+void movz(uint32_t instruction) {
+    uint8_t rd = instruction & 0b11111;         // Rd
+    uint16_t imm16 = (instruction >> 5) & 0xFFFF; // imm16
+
+    uint64_t result = (uint64_t)imm16;
+    
+    // Guardamos el resultado en el registro destino
+    NEXT_STATE.REGS[rd] = result;
+}
