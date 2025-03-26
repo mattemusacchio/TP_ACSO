@@ -23,6 +23,7 @@
 #define STUR_OP     0b11111000000
 #define STURB_OP    0b00111000000
 #define STURH_OP    0b01111000000
+#define LDUR 0b11111000010
 
 // Declaraciones de funciones
 void update_flags(int64_t result);
@@ -107,8 +108,12 @@ void process_instruction() {
             case STURH_OP:
                 sturh(instruction);
                 break;
+            case LDUR:
+                ldur(instruction);
+                break;
         }
     }
+    CURRENT_STATE.REGS[31] = 0;
     NEXT_STATE.PC = CURRENT_STATE.PC + 4;
 }
 
@@ -116,16 +121,6 @@ void process_instruction() {
 void update_flags(int64_t result) {
     NEXT_STATE.FLAG_N = (result < 0) ? 1 : 0;
     NEXT_STATE.FLAG_Z = (result == 0) ? 1 : 0;
-}
-
-uint64_t zero_extend(uint32_t shift, uint32_t imm12){ // aca si podemos usar zero extend en las signed q reciba eso q esta como 12 como un int 
-    uint64_t imm;
-    if (shift == 0b00) {
-        imm = (uint64_t)imm12;
-    } else if (shift == 0b01){
-        imm = (uint64_t)imm12 << 12;
-    }
-    return imm;
 }
 
 void halt(uint32_t instruction){
@@ -160,7 +155,12 @@ void adds_subs_immediate(uint32_t instruction, int update_flag, int addition){
     uint16_t rn = (instruction >> 5) & 0b11111;
     uint16_t shift = (instruction >> 22) & 0b11;
     uint16_t imm12 = (instruction >> 10) & 0b111111111111;
-    uint64_t imm = zero_extend(shift, imm12);
+    uint64_t imm;
+    if (shift == 0b00) {
+        imm = (uint64_t)imm12;
+    } else if (shift == 0b01){
+        imm = (uint64_t)imm12 << 12;
+    }
     uint64_t operand1 = CURRENT_STATE.REGS[rn];
     uint64_t result;
     if (addition == 1){
@@ -395,4 +395,21 @@ void sturh(uint32_t instruction) {
     
     // Escribir el valor actualizado
     mem_write_32(address, new_value);
+}
+
+void ldur(uint32_t instruction) {
+    uint8_t Rn = (instruction >> 5) & 0b11111;    
+    uint8_t Rt = instruction & 0b11111;           
+    int16_t imm9 = (instruction >> 12) & 0x1FF;     
+
+    int64_t offset = ((int64_t)(imm9 << 55)) >> 55; //genera que se extienda el imm a 64 bits sin perder el signo ni el numero
+
+    uint64_t base = (uint64_t)CURRENT_STATE.REGS[Rn]; //lee los 64 bits de rn q es el regisyto de donde se lee 
+    uint64_t address = base + offset;
+    // Como porgramammos para 64 bits tengo q hacer 2 lecturas lo q solo leo de a 32 
+    uint64_t lower = (uint64_t)mem_read_32(address);
+    uint64_t upper = (uint64_t)mem_read_32(address + 4);
+    uint64_t value = lower | (upper << 32);
+
+    NEXT_STATE.REGS[Rt] = value;
 }
