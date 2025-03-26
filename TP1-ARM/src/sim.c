@@ -23,11 +23,11 @@
 #define STUR_OP     0b11111000000
 #define STURB_OP    0b00111000000
 #define STURH_OP    0b01111000000
-#define LDUR 0b11111000010
+#define LDUR        0b11111000010
+
 
 // Declaraciones de funciones
 void update_flags(int64_t result);
-uint64_t zero_extend(uint32_t shift, uint32_t imm12);
 void halt(uint32_t instruction);
 void adds_subs_ext(uint32_t instruction, int update_flag, int addition);
 void adds_subs_immediate(uint32_t instruction, int update_flag, int addition);
@@ -39,6 +39,7 @@ void lslr_imm(uint32_t instruction);
 void stur(uint32_t instruction);
 void sturb(uint32_t instruction);
 void sturh(uint32_t instruction);
+int64_t sign_extend(int64_t value, int bits);
 
 void process_instruction() {
     uint32_t instruction;
@@ -396,16 +397,19 @@ void sturh(uint32_t instruction) {
     // Escribir el valor actualizado
     mem_write_32(address, new_value);
 }
-
+int64_t sign_extend(int64_t value, int bits) {
+    int64_t mask = 1LL << (bits - 1);
+    return (value ^ mask) - mask;
+}
 void ldur(uint32_t instruction) {
     uint8_t Rn = (instruction >> 5) & 0b11111;    
     uint8_t Rt = instruction & 0b11111;           
-    int16_t imm9 = (instruction >> 12) & 0x1FF;     
+    int16_t imm9 = (instruction >> 12) & 0b111111111;     
 
-    int64_t offset = ((int64_t)(imm9 << 55)) >> 55; //genera que se extienda el imm a 64 bits sin perder el signo ni el numero
+    int64_t offset = sign_extend(imm9, 9); //genera que se extienda el imm a 64 bits sin perder el signo ni el numero
 
-    uint64_t base = (uint64_t)CURRENT_STATE.REGS[Rn]; //lee los 64 bits de rn q es el regisyto de donde se lee 
-    uint64_t address = base + offset;
+    uint64_t address = (uint64_t)CURRENT_STATE.REGS[Rn]; //lee los 64 bits de rn q es el regisyto de donde se lee 
+    address = address + offset;
     // Como porgramammos para 64 bits tengo q hacer 2 lecturas lo q solo leo de a 32 
     uint64_t lower = (uint64_t)mem_read_32(address);
     uint64_t upper = (uint64_t)mem_read_32(address + 4);
