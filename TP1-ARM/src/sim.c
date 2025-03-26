@@ -26,7 +26,7 @@
 #define LDUR        0b11111000010
 #define LDURB       0b00111000010
 #define LDURH       0b01111000010
-
+#define MUL         0b10011011000  
 
 
 // Declaraciones de funciones
@@ -116,12 +116,13 @@ void process_instruction() {
             case LDUR:
                 ldur(instruction);
                 break;
-                case LDURB:
+            case LDURB:
                     ldurbh(instruction, 1);
                     break;
-                case LDURH:
+            case LDURH:
                     ldurbh(instruction, 0);
                     break;
+                
         }
     }
     CURRENT_STATE.REGS[31] = 0;

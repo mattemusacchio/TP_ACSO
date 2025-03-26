@@ -1,21 +1,4 @@
 Instrucciones a implementar 
- 
-LDURH 
-ldurh  W1,  [X2,  #0x10]  (descripción:  X1=  48’b0,  M[X2  +  0x10](15:0),  osea  48  ceros  y  los 
-primeros 16 bits guardados en la dirección de memoria) 
-Acuerdense que en el simulador la memoria empieza en 0x10000000, ver especificaciones, no 
-cambia la implementación pero si el testeo. 
- 
-LDURB 
-ldurb  W1,  [X2,  #0x10]  (descripción:  X1=  56’b0,  M[X2  +  0x10](7:0),  osea  56  ceros  y  los 
-primeros 8 bits guardados en la dirección de memoria) 
-Acuerdense que en el simulador la memoria empieza en 0x10000000, ver especificaciones, no 
-cambia la implementación pero si el testeo. 
- 
-MOVZ 
-movz X1, 10 (descripción: X1 = 10, Solo hay que implementar la condición donde hw = 0, osea 
-shift es cero.) 
- 
 
  
 MUL 
