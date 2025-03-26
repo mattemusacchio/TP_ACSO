@@ -19,6 +19,7 @@
 #define B_OP   0b000101
 #define BR_OP   0b11010110000
 #define B_COND_OP   0b01010100
+#define LSLR_IMM 0b110100110
 
 // Declaraciones de funciones
 void update_flags(int64_t result);
@@ -30,7 +31,7 @@ void logical_shifted_register(uint32_t instruction, int op);
 void branch(uint32_t instruction);
 void branch_register(uint32_t instruction);
 void branch_conditional(uint32_t instruction);
-
+void lslr_imm(uint32_t instruction);
 
 void process_instruction() {
     uint32_t instruction;
@@ -87,6 +88,9 @@ void process_instruction() {
                 return;
             case HLT_OP:
                 halt(instruction);
+                break;
+            case LSLR_IMM:
+                lslr_imm(instruction);
                 break;
         }
     }
@@ -245,5 +249,24 @@ void branch_conditional(uint32_t instruction) {
     } else {
         NEXT_STATE.PC = CURRENT_STATE.PC + 4;
     }
+}
+
+void lslr_imm(uint32_t instruction){
+    uint8_t N = (instruction >> 22) & 0b1;
+    uint8_t imms = (instruction >> 10) & 0b111111;
+    uint8_t Rn = (instruction >> 5) & 0b11111;
+    uint8_t Rd = instruction & 0b11111;
+    uint64_t operand1 = CURRENT_STATE.REGS[Rn]; 
+        // PREGUNTAR SI chequeo q se cumpla la condicion esa  N xq onda si es 64 si se deberia cumplir tipo asumo. 
+        uint64_t result;
+    if (N == 1 && imms != 0b111111){
+        uint8_t shift = 63 - imms;
+        result = operand1 << shift;
+    }
+    else if (N ==1 && imms == 0b111111){
+        uint8_t shift = (instruction >> 16) & 0b111111;
+        result = operand1 >> shift; 
+    }
+    NEXT_STATE.REGS[Rd] = result;
 }
 
