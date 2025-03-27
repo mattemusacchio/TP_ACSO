@@ -270,13 +270,13 @@ void branch_conditional(uint32_t instruction) {
         case 0b0001: // NE
             should_branch = !CURRENT_STATE.FLAG_Z;
             break;
-        case 0b1010: // GT
-            should_branch = !CURRENT_STATE.FLAG_N;
+        case 0b1010: // GE
+            should_branch = (!CURRENT_STATE.FLAG_N || CURRENT_STATE.FLAG_Z);
             break;
         case 0b1011: // LT
-            should_branch = CURRENT_STATE.FLAG_N;
+            should_branch = (CURRENT_STATE.FLAG_N && !CURRENT_STATE.FLAG_Z);
             break;
-        case 0b1100: // GE
+        case 0b1100: // GT
             should_branch = (!CURRENT_STATE.FLAG_Z && !CURRENT_STATE.FLAG_N);
             break;
         case 0b1101: // LE
