@@ -350,14 +350,14 @@ void sturbh(uint32_t instruction, int sb) {
     else if (sb == 0) {
         uint16_t value = current_value & 0xFFFF;
 
-        aligned_address = address & ~0b11;
-        uint32_t word = mem_read_32(aligned_address);
+        aligned_address = address & ~0b11; 
+        uint32_t word = mem_read_32(aligned_address); //lee 4 primeros bytes 
         uint8_t byte_position = address & 0b11;
 
         if (byte_position == 3) {
-            uint32_t mask1 = ~(0xFF << 24);
-            uint32_t insert1 = (value & 0xFF) << 24;
-            new_word = (word & mask1) | insert1;
+            uint32_t mask1 = ~(0xFF << 24);   //0000000001111111111
+            uint32_t insert1 = (value & 0xFF) << 24; //value0000000
+            new_word = (word & mask1) | insert1; //priumero toma ultimos 3 bytes del word q es lo q leimos del address q mandaron 0000003byw cuanDO HACE EL INSERT VALUE  Y ULTIMOS 3 BYTES 
             mem_write_32(aligned_address, new_word);
 
             uint32_t word2 = mem_read_32(aligned_address + 4);
@@ -373,7 +373,7 @@ void sturbh(uint32_t instruction, int sb) {
             mem_write_32(aligned_address, new_word);
         }
     }
-}
+} 
 
 void ldur(uint32_t instruction) {
     uint8_t Rn = (instruction >> 5) & 0b11111;    
