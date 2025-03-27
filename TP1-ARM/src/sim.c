@@ -42,8 +42,7 @@ void branch_register(uint32_t instruction);
 void branch_conditional(uint32_t instruction);
 void lslr_imm(uint32_t instruction);
 void stur(uint32_t instruction);
-void sturb(uint32_t instruction);
-void sturh(uint32_t instruction);
+void sturbh(uint32_t instruction, int sb);
 int64_t sign_extend(int64_t value, int bits);
 void ldur(uint32_t instruction);
 void ldurbh(uint32_t instruction, int b);
@@ -114,10 +113,10 @@ void process_instruction() {
                 stur(instruction);
                 break;
             case STURB_OP:
-                sturb(instruction);
+                sturbh(instruction, 1);
                 break;
             case STURH_OP:
-                sturh(instruction);
+                sturbh(instruction, 0);
                 break;
             case LDUR:
                 ldur(instruction);
@@ -207,6 +206,11 @@ void adds_subs_immediate(uint32_t instruction, int update_flag, int addition){
     }
 }
 
+int64_t sign_extend(int64_t value, int bits) {
+    int64_t mask = 1LL << (bits - 1);
+    return (value ^ mask) - mask;
+}
+
 void logical_shifted_register(uint32_t instruction, int op) {
     uint32_t rd = instruction & 0b11111;
     uint32_t rn = (instruction >> 5) & 0b11111;
@@ -239,11 +243,7 @@ void logical_shifted_register(uint32_t instruction, int op) {
 void branch(uint32_t instruction) {
     int32_t imm26 = instruction & 0x3FFFFFF;  // 0x3FFFFFF = 0b11111111111111111111111111
     
-    if ((imm26 >> 25) & 0b1) {  //chequea q el bit mas signofocativo sea 1
-        imm26 |= ~0x3FFFFFF;  // aca estamos extendiendo el immediate con 6 unos digamos q van del bit 26 al 31 (los mas signficiativos)
-    }
-    
-    int64_t offset = ((int64_t)imm26) << 2; //tenemos zero extend q funciona devolviendo un uint, podemos usarla en este caso q es int64_t?? dejamos esta linea o nos creamos una funcion zero extend para signed ints
+    int64_t offset = sign_extend(imm26, 26) << 2; 
     
     NEXT_STATE.PC = CURRENT_STATE.PC + offset;
 }
@@ -260,12 +260,7 @@ void branch_conditional(uint32_t instruction) {
     
     int32_t imm19 = ((instruction >> 5) & 0x7FFFF);  
     
-    // lo mismo d antes d si el bit mas significativo del immm19 es 1 entonces extiende a 32 bits poniendi unos adelantes
-    if ((imm19 >> 18) & 0b1) {  
-        imm19 |= ~0x7FFFF;  // Extender el signo rellenando con 1s
-    }
-    
-    int64_t offset = ((int64_t)imm19) << 2;   //aca d nuevo estamos haciendo zero extend preguntar bien q onda si se pUede usar el otro 
+    int64_t offset = sign_extend(imm19, 19) << 2;   
 
     int should_branch = 0;
     switch(cond) {
@@ -315,11 +310,6 @@ void lslr_imm(uint32_t instruction){
     NEXT_STATE.REGS[Rd] = result;
 }
 
-
-int64_t sign_extend(int64_t value, int bits) {
-    int64_t mask = 1LL << (bits - 1);
-    return (value ^ mask) - mask;
-}
 
 void stur(uint32_t instruction) {
     uint8_t Rt = instruction & 0b11111;
