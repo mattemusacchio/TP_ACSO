@@ -335,54 +335,54 @@ void stur(uint32_t instruction) {
 }
 
 
-void sturb(uint32_t instruction) {
+void sturbh(uint32_t instruction, int sb) {
     uint32_t rt = instruction & 0b11111;         
     uint32_t rn = (instruction >> 5) & 0b11111;  
     uint32_t imm9 = (instruction >> 12) & 0b111111111;
 
-
     int64_t offset = sign_extend(imm9, 9);
-    
-    uint64_t address = CURRENT_STATE.REGS[rn];
-    
-    address = address + offset;
-    
+    uint64_t address = CURRENT_STATE.REGS[rn] + offset;
     uint32_t current_value = CURRENT_STATE.REGS[rt];
-    
-    uint8_t value = current_value & 0b11111111;
 
-    uint64_t aligned_address = address & ~0b11;
-    uint32_t word = mem_read_32(aligned_address);
+    uint64_t aligned_address;
+    uint32_t new_word;
 
-    uint8_t byte_position = address & 0b11;
-    uint32_t mask = ~(0b11111111 << (byte_position * 8));
-    uint32_t new_word = (word & mask) | (value << (byte_position * 8));
+    if (sb == 1) {
+        uint8_t value = current_value & 0b11111111;
+        aligned_address = address & ~0b11;
+        uint32_t word = mem_read_32(aligned_address);
 
-    mem_write_32(aligned_address, new_word);
-    
-}
+        uint8_t byte_position = address & 0b11;
+        uint32_t mask = ~(0b11111111 << (byte_position * 8));
+        new_word = (word & mask) | (value << (byte_position * 8));
+        mem_write_32(aligned_address, new_word);
+    }
+    else if (sb == 0) {
+        uint16_t value = current_value & 0xFFFF;
 
+        aligned_address = address & ~0b11;
+        uint32_t word = mem_read_32(aligned_address);
+        uint8_t byte_position = address & 0b11;
 
-void sturh(uint32_t instruction) {
-    uint32_t rt = instruction & 0b11111;         
-    uint32_t rn = (instruction >> 5) & 0b11111;  
-    uint32_t imm9 = (instruction >> 12) & 0b111111111;
-    
-    int64_t offset = sign_extend(imm9, 9);
+        if (byte_position == 3) {
+            uint32_t mask1 = ~(0xFF << 24);
+            uint32_t insert1 = (value & 0xFF) << 24;
+            new_word = (word & mask1) | insert1;
+            mem_write_32(aligned_address, new_word);
 
-    uint64_t address = CURRENT_STATE.REGS[rn];
-
-    address = address + offset;
-    
-    uint32_t current_value = mem_read_32(address);
-    
-    uint8_t halfword_offset = (offset & 0x2) ? 16 : 0;
-    
-    uint32_t mask = ~(0xFFFF << halfword_offset);
-    
-    uint32_t new_value = (current_value & mask) | ((CURRENT_STATE.REGS[rt] & 0xFFFF) << halfword_offset);
-    
-    mem_write_32(address, new_value);
+            uint32_t word2 = mem_read_32(aligned_address + 4);
+            uint32_t mask2 = ~0xFF;
+            uint32_t insert2 = (value >> 8) & 0xFF;
+            uint32_t new_word2 = (word2 & mask2) | insert2;
+            mem_write_32(aligned_address + 4, new_word2);
+            return;
+        } else {
+            uint32_t mask = ~(0xFFFF << (byte_position * 8));
+            uint32_t insert = value << (byte_position * 8);
+            new_word = (word & mask) | insert;
+            mem_write_32(aligned_address, new_word);
+        }
+    }
 }
 
 void ldur(uint32_t instruction) {
