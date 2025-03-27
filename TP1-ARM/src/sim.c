@@ -4,7 +4,6 @@
 #include <stdint.h>
 #include "shell.h"
 
-// opcodes
 #define ADD_EXT_OP  0b10001011001
 #define ADD_IMM_OP  0b10010001
 #define ADDS_EXT_OP 0b10101011000
@@ -31,7 +30,6 @@
 #define CBZ         0b10110100
 #define CBNZ        0b10110101
 
-// Declaraciones de funciones
 void update_flags(int64_t result);
 void halt(uint32_t instruction);
 void adds_subs_ext(uint32_t instruction, int update_flag, int addition);
