@@ -41,7 +41,6 @@ void branch(uint32_t instruction);
 void branch_register(uint32_t instruction);
 void branch_conditional(uint32_t instruction);
 void lslr_imm(uint32_t instruction);
-void stur(uint32_t instruction);
 void sturbh(uint32_t instruction, int sb);
 int64_t sign_extend(int64_t value, int bits);
 void ldur(uint32_t instruction);
@@ -103,13 +102,13 @@ void process_instruction() {
                 lslr_imm(instruction);
                 break;
             case STUR_OP:
-                stur(instruction);
+                sturbh(instruction, 0);
                 break;
             case STURB_OP:
                 sturbh(instruction, 1);
                 break;
             case STURH_OP:
-                sturbh(instruction, 0);
+                sturbh(instruction, 2);
                 break;
             case LDUR:
                 ldur(instruction);
@@ -297,21 +296,6 @@ void lslr_imm(uint32_t instruction){
     NEXT_STATE.REGS[Rd] = result;
 }
 
-
-void stur(uint32_t instruction) {
-    uint8_t Rt = instruction & 0b11111;
-    uint8_t Rn = (instruction >> 5) & 0b11111;
-    uint16_t imm9 = (instruction >> 12) & 0b111111111;
-
-    int64_t offset = sign_extend(imm9, 9);
-    uint64_t address = (uint64_t)CURRENT_STATE.REGS[Rn] + offset;
-
-    uint64_t value = CURRENT_STATE.REGS[Rt];
-    mem_write_32(address, value & 0b11111111111111111111111111111111);      
-    mem_write_32(address + 4, value >> 32);         
-}
-
-
 void sturbh(uint32_t instruction, int sb) {
     uint8_t rt = instruction & 0b11111;         
     uint8_t rn = (instruction >> 5) & 0b11111;  
@@ -324,6 +308,10 @@ void sturbh(uint32_t instruction, int sb) {
     uint64_t aligned_address;
     uint64_t new_word;
 
+    if (sb == 0) {
+        mem_write_32(address, current_value & 0b11111111111111111111111111111111);      
+        mem_write_32(address + 4, current_value >> 32);   
+    }
     if (sb == 1) {
         uint8_t value = current_value & 0b11111111;
         aligned_address = address & ~0b11;
@@ -334,7 +322,7 @@ void sturbh(uint32_t instruction, int sb) {
         new_word = (word & mask) | (value << (byte_position * 8));
         mem_write_32(aligned_address, new_word);
     }
-    else if (sb == 0) {
+    if (sb == 2) {
         uint16_t value = current_value & 0xFFFF;
 
         aligned_address = address & ~0b11; 
