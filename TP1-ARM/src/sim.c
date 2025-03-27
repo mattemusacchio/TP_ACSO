@@ -52,12 +52,9 @@ void cbzn(uint32_t instruction, int bz);
 void process_instruction() {
     uint32_t instruction;
     uint32_t opcode;
-
     instruction = mem_read_32(CURRENT_STATE.PC);
-
     for (int length = 11; length >= 6; length--) { 
-        uint32_t opcode = (instruction >> (32 - length)) & ((1 << length) - 1);
-
+        opcode = (instruction >> (32 - length)) & ((1 << length) - 1);
         switch(opcode) {
             case ADD_IMM_OP:
                 adds_subs_immediate(instruction, 0, 1);
@@ -131,13 +128,11 @@ void process_instruction() {
             case CBNZ:
                 cbzn(instruction, 0);
                 break;
-                
         }
     }
     CURRENT_STATE.REGS[31] = 0;
     NEXT_STATE.PC = CURRENT_STATE.PC + 4;
 }
-
 
 void update_flags(int64_t result) {
     NEXT_STATE.FLAG_N = (result < 0) ? 1 : 0;
@@ -152,11 +147,9 @@ void adds_subs_ext(uint32_t instruction, int update_flag, int addition) {
     uint8_t rd = instruction & 0b11111;
     uint8_t rn = (instruction >> 5) & 0b11111;
     uint8_t rm = (instruction >> 16) & 0b11111;
-    
     uint64_t operand1 = CURRENT_STATE.REGS[rn];
     uint64_t operand2 = CURRENT_STATE.REGS[rm];
     uint64_t result;
-
     if (addition == 1){
         result = operand1 + operand2;
     }
@@ -189,7 +182,6 @@ void adds_subs_immediate(uint32_t instruction, int update_flag, int addition){
         result = operand1 - imm;
     }
     NEXT_STATE.REGS[rd] = result;
-
     if (update_flag == 1){ 
         update_flags(result);
     }
@@ -204,18 +196,17 @@ void logical_shifted_register(uint32_t instruction, int op) {
     uint8_t rd = instruction & 0b11111;
     uint8_t rn = (instruction >> 5) & 0b11111;
     uint8_t rm = (instruction >> 16) & 0b11111;
-    
     uint64_t operand1 = CURRENT_STATE.REGS[rn];
     uint64_t operand2 = CURRENT_STATE.REGS[rm];
     uint64_t result;
     switch(op) {
-        case 0: // ANDS
+        case 0: 
             result = operand1 & operand2;
             break;
-        case 1: // EOR
+        case 1: 
             result = operand1 ^ operand2;
             break;
-        case 2: // OR
+        case 2:
             result = operand1 | operand2;
             break;
         default:
@@ -228,49 +219,41 @@ void logical_shifted_register(uint32_t instruction, int op) {
 }
 
 void branch(uint32_t instruction) {
-    int32_t imm26 = instruction & 0x3FFFFFF;  // 0x3FFFFFF = 0b11111111111111111111111111
-    
+    int32_t imm26 = instruction & 0b11111111111111111111111111; 
     int64_t offset = sign_extend(imm26, 26) << 2; 
-    
     NEXT_STATE.PC = CURRENT_STATE.PC + offset;
 }
 
-
-
 void branch_register(uint32_t instruction) {
-    uint8_t rn = instruction & 0b11111;  // aca sacamos los 5 bits del registro al q hay q ir y se va para ahi
+    uint8_t rn = instruction & 0b11111;  
     NEXT_STATE.PC = CURRENT_STATE.REGS[rn];
 }
 
 void branch_conditional(uint32_t instruction) {
-    uint8_t cond = instruction & 0b1111;  // los primeros 4 bits de la instruccion son el condicional
-    
-    int32_t imm19 = ((instruction >> 5) & 0x7FFFF);  
-    
-    int64_t offset = sign_extend(imm19, 19) << 2;   
-
+    uint8_t cond = instruction & 0b1111; 
+    int32_t imm19 = ((instruction >> 5) & 0x7FFFF);  //HAY EXA
+    int64_t offset = sign_extend(imm19, 19) << 2;  
     int should_branch = 0;
     switch(cond) {
-        case 0b0000: // EQ
+        case 0b0000: 
             should_branch = CURRENT_STATE.FLAG_Z;
             break;
-        case 0b0001: // NE
+        case 0b0001: 
             should_branch = !CURRENT_STATE.FLAG_Z;
             break;
-        case 0b1010: // GE
+        case 0b1010:
             should_branch = (!CURRENT_STATE.FLAG_N || CURRENT_STATE.FLAG_Z);
             break;
-        case 0b1011: // LT
+        case 0b1011:
             should_branch = (CURRENT_STATE.FLAG_N && !CURRENT_STATE.FLAG_Z);
             break;
-        case 0b1100: // GT
+        case 0b1100: 
             should_branch = (!CURRENT_STATE.FLAG_Z && !CURRENT_STATE.FLAG_N);
             break;
-        case 0b1101: // LE
+        case 0b1101:
             should_branch = (CURRENT_STATE.FLAG_Z || CURRENT_STATE.FLAG_N);
             break;
     }
-
     if (should_branch) {
         NEXT_STATE.PC = CURRENT_STATE.PC + offset;
     } else {
@@ -284,8 +267,7 @@ void lslr_imm(uint32_t instruction){
     uint8_t Rn = (instruction >> 5) & 0b11111;
     uint8_t Rd = instruction & 0b11111;
     uint64_t operand1 = CURRENT_STATE.REGS[Rn]; 
-        // PREGUNTAR SI chequeo q se cumpla la condicion esa  N xq onda si es 64 si se deberia cumplir tipo asumo. 
-        uint64_t result;
+    uint64_t result;
     if (N == 1 && imms != 0b111111){
         uint8_t shift = 63 - imms;
         result = operand1 << shift;
@@ -301,14 +283,11 @@ void sturbh(uint32_t instruction, int sb) {
     uint8_t rt = instruction & 0b11111;         
     uint8_t rn = (instruction >> 5) & 0b11111;  
     uint16_t imm9 = (instruction >> 12) & 0b111111111;
-
     int64_t offset = sign_extend(imm9, 9);
     uint64_t address = CURRENT_STATE.REGS[rn] + offset;
     uint64_t current_value = CURRENT_STATE.REGS[rt];
-
     uint64_t aligned_address;
     uint64_t new_word;
-
     if (sb == 0) {
         mem_write_32(address, current_value & 0b11111111111111111111111111111111);      
         mem_write_32(address + 4, current_value >> 32);   
@@ -317,33 +296,29 @@ void sturbh(uint32_t instruction, int sb) {
         uint8_t value = current_value & 0b11111111;
         aligned_address = address & ~0b11;
         uint32_t word = mem_read_32(aligned_address);
-
         uint8_t byte_position = address & 0b11;
         uint32_t mask = ~(0b11111111 << (byte_position * 8));
         new_word = (word & mask) | (value << (byte_position * 8));
         mem_write_32(aligned_address, new_word);
     }
     if (sb == 2) {
-        uint16_t value = current_value & 0xFFFF;
-
+        uint16_t value = current_value & 0xFFFF; //HAY EXA
         aligned_address = address & ~0b11; 
         uint32_t word = mem_read_32(aligned_address); //lee 4 primeros bytes 
         uint8_t byte_position = address & 0b11;
-
         if (byte_position == 3) {
-            uint32_t mask1 = ~(0xFF << 24);   //0000000001111111111
-            uint32_t insert1 = (value & 0xFF) << 24; //value0000000
+            uint32_t mask1 = ~(0xFF << 24);   //0000000001111111111 HAY EXA
+            uint32_t insert1 = (value & 0xFF) << 24; //value0000000 HAY EXA
             new_word = (word & mask1) | insert1; //priumero toma ultimos 3 bytes del word q es lo q leimos del address q mandaron 0000003byw cuanDO HACE EL INSERT VALUE  Y ULTIMOS 3 BYTES 
             mem_write_32(aligned_address, new_word);
-
             uint32_t word2 = mem_read_32(aligned_address + 4);
-            uint32_t mask2 = ~0xFF;
-            uint32_t insert2 = (value >> 8) & 0xFF;
+            uint32_t mask2 = ~0xFF; //HAY EXA
+            uint32_t insert2 = (value >> 8) & 0xFF; //HAY EXA
             uint32_t new_word2 = (word2 & mask2) | insert2;
             mem_write_32(aligned_address + 4, new_word2);
             return;
         } else {
-            uint32_t mask = ~(0xFFFF << (byte_position * 8));
+            uint32_t mask = ~(0xFFFF << (byte_position * 8)); //HAY EXA
             uint32_t insert = value << (byte_position * 8);
             new_word = (word & mask) | insert;
             mem_write_32(aligned_address, new_word);
@@ -355,16 +330,12 @@ void ldur(uint32_t instruction) {
     uint8_t Rn = (instruction >> 5) & 0b11111;    
     uint8_t Rt = instruction & 0b11111;           
     int16_t imm9 = (instruction >> 12) & 0b111111111;     
-
-    int64_t offset = sign_extend(imm9, 9); //genera que se extienda el imm a 64 bits sin perder el signo ni el numero
-
-    uint64_t address = (uint64_t)CURRENT_STATE.REGS[Rn]; //lee los 64 bits de rn q es el regisyto de donde se lee 
+    int64_t offset = sign_extend(imm9, 9);
+    uint64_t address = (uint64_t)CURRENT_STATE.REGS[Rn]; 
     address = address + offset;
-    // Como porgramammos para 64 bits tengo q hacer 2 lecturas lo q solo leo de a 32 
     uint64_t lower = (uint64_t)mem_read_32(address);
     uint64_t upper = (uint64_t)mem_read_32(address + 4);
     uint64_t value = lower | (upper << 32);
-
     NEXT_STATE.REGS[Rt] = value;
 }
 
@@ -381,10 +352,8 @@ void ldurbh(uint32_t instruction, int b) {
 
 void movz(uint32_t instruction) {
     uint8_t rd = instruction & 0b11111;         
-    uint16_t imm16 = (instruction >> 5) & 0xFFFF; 
-
+    uint16_t imm16 = (instruction >> 5) & 0xFFFF;  // HAY EXA
     uint64_t result = (uint64_t)imm16;
-    
     NEXT_STATE.REGS[rd] = result;
 }
 
