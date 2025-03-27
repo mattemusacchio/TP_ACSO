@@ -53,13 +53,6 @@ void cbzn(uint32_t instruction, int bz);
 void process_instruction() {
     uint32_t instruction;
     uint32_t opcode;
-    uint32_t rd, rn, rm, shamt;
-    int64_t imm;
-    int64_t imm19;
-    int64_t imm26;
-    int64_t cond;
-    int64_t offset;
-    uint64_t addr;
 
     instruction = mem_read_32(CURRENT_STATE.PC);
 
@@ -157,9 +150,9 @@ void halt(uint32_t instruction){
 }
 
 void adds_subs_ext(uint32_t instruction, int update_flag, int addition) {
-    uint32_t rd = instruction & 0b11111;
-    uint32_t rn = (instruction >> 5) & 0b11111;
-    uint32_t rm = (instruction >> 16) & 0b11111;
+    uint8_t rd = instruction & 0b11111;
+    uint8_t rn = (instruction >> 5) & 0b11111;
+    uint8_t rm = (instruction >> 16) & 0b11111;
     
     uint64_t operand1 = CURRENT_STATE.REGS[rn];
     uint64_t operand2 = CURRENT_STATE.REGS[rm];
@@ -171,18 +164,16 @@ void adds_subs_ext(uint32_t instruction, int update_flag, int addition) {
     else if (addition == 0) {
         result = operand1 - operand2;
     }
-    if (rd != 31) {
-        NEXT_STATE.REGS[rd] = result;
-    }
+    NEXT_STATE.REGS[rd] = result;
     if (update_flag == 1){
         update_flags(result);
     }
 }
 
 void adds_subs_immediate(uint32_t instruction, int update_flag, int addition){
-    uint16_t rd = instruction & 0b11111;
-    uint16_t rn = (instruction >> 5) & 0b11111;
-    uint16_t shift = (instruction >> 22) & 0b11;
+    uint8_t rd = instruction & 0b11111;
+    uint8_t rn = (instruction >> 5) & 0b11111;
+    uint8_t shift = (instruction >> 22) & 0b11;
     uint16_t imm12 = (instruction >> 10) & 0b111111111111;
     uint64_t imm;
     if (shift == 0b00) {
@@ -198,9 +189,7 @@ void adds_subs_immediate(uint32_t instruction, int update_flag, int addition){
     else if (addition == 0){
         result = operand1 - imm;
     }
-    if (rd != 31){
-        NEXT_STATE.REGS[rd] = result;
-    }
+    NEXT_STATE.REGS[rd] = result;
     if (update_flag == 1){ 
         update_flags(result);
     }
@@ -212,9 +201,9 @@ int64_t sign_extend(int64_t value, int bits) {
 }
 
 void logical_shifted_register(uint32_t instruction, int op) {
-    uint32_t rd = instruction & 0b11111;
-    uint32_t rn = (instruction >> 5) & 0b11111;
-    uint32_t rm = (instruction >> 16) & 0b11111;
+    uint8_t rd = instruction & 0b11111;
+    uint8_t rn = (instruction >> 5) & 0b11111;
+    uint8_t rm = (instruction >> 16) & 0b11111;
     
     uint64_t operand1 = CURRENT_STATE.REGS[rn];
     uint64_t operand2 = CURRENT_STATE.REGS[rm];
@@ -232,9 +221,7 @@ void logical_shifted_register(uint32_t instruction, int op) {
         default:
             return;
     }
-    if (rd != 31) {
-        NEXT_STATE.REGS[rd] = result;
-    }
+    NEXT_STATE.REGS[rd] = result;
     if (op == 0) {
         update_flags(result);
     }
@@ -251,12 +238,12 @@ void branch(uint32_t instruction) {
 
 
 void branch_register(uint32_t instruction) {
-    uint32_t rn = instruction & 0b11111;  // aca sacamos los 5 bits del registro al q hay q ir y se va para ahi
+    uint8_t rn = instruction & 0b11111;  // aca sacamos los 5 bits del registro al q hay q ir y se va para ahi
     NEXT_STATE.PC = CURRENT_STATE.REGS[rn];
 }
 
 void branch_conditional(uint32_t instruction) {
-    uint32_t cond = instruction & 0b1111;  // los primeros 4 bits de la instruccion son el condicional
+    uint8_t cond = instruction & 0b1111;  // los primeros 4 bits de la instruccion son el condicional
     
     int32_t imm19 = ((instruction >> 5) & 0x7FFFF);  
     
@@ -326,16 +313,16 @@ void stur(uint32_t instruction) {
 
 
 void sturbh(uint32_t instruction, int sb) {
-    uint32_t rt = instruction & 0b11111;         
-    uint32_t rn = (instruction >> 5) & 0b11111;  
-    uint32_t imm9 = (instruction >> 12) & 0b111111111;
+    uint8_t rt = instruction & 0b11111;         
+    uint8_t rn = (instruction >> 5) & 0b11111;  
+    uint16_t imm9 = (instruction >> 12) & 0b111111111;
 
     int64_t offset = sign_extend(imm9, 9);
     uint64_t address = CURRENT_STATE.REGS[rn] + offset;
-    uint32_t current_value = CURRENT_STATE.REGS[rt];
+    uint64_t current_value = CURRENT_STATE.REGS[rt];
 
     uint64_t aligned_address;
-    uint32_t new_word;
+    uint64_t new_word;
 
     if (sb == 1) {
         uint8_t value = current_value & 0b11111111;
