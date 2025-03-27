@@ -322,19 +322,16 @@ int64_t sign_extend(int64_t value, int bits) {
 }
 
 void stur(uint32_t instruction) {
-    uint32_t rt = instruction & 0b11111;         
-    uint32_t rn = (instruction >> 5) & 0b11111;  
-    uint32_t imm9 = (instruction >> 12) & 0b111111111;
+    uint8_t Rt = instruction & 0b11111;
+    uint8_t Rn = (instruction >> 5) & 0b11111;
+    uint16_t imm9 = (instruction >> 12) & 0b111111111;
 
     int64_t offset = sign_extend(imm9, 9);
-    
-    uint64_t address = CURRENT_STATE.REGS[rn];
-    
-    address = address + offset;
-    
-    uint64_t value = CURRENT_STATE.REGS[rt];
-    mem_write_32(address, value & 0xFFFFFFFF);        // 32 bits inferiores
-    mem_write_32(address + 4, value >> 32);           // 32 bits superiores
+    uint64_t address = (uint64_t)CURRENT_STATE.REGS[Rn] + offset;
+
+    uint64_t value = CURRENT_STATE.REGS[Rt];
+    mem_write_32(address, value & 0b11111111111111111111111111111111);      
+    mem_write_32(address + 4, value >> 32);         
 }
 
 
@@ -343,18 +340,8 @@ void sturb(uint32_t instruction) {
     uint32_t rn = (instruction >> 5) & 0b11111;  
     uint32_t imm9 = (instruction >> 12) & 0b111111111;
 
-    // sturb X1, [X2, #0x10] (descripción: M[X2 + 0x10](7:0) = X1(7:0), osea los primeros 8 bits del 
-    // registro  son  guardados  en  los  primeros  8  bits  guardados  en  la  dirección  de  memoria). 
-    // Importante acordarse que la memoria es little endian en Arm.  
-    // Acuerdense que en el simulador la memoria empieza en 0x10000000, ver especificaciones, no 
-    // cambia la implementación pero si el testeo.
 
-    int64_t offset;
-    if ((imm9 >> 8) & 0b1) {
-        offset = imm9 | ~0x1FF;
-    } else {
-        offset = imm9;
-    }
+    int64_t offset = sign_extend(imm9, 9);
     
     uint64_t address = CURRENT_STATE.REGS[rn];
     
@@ -364,11 +351,15 @@ void sturb(uint32_t instruction) {
     
     uint8_t value = current_value & 0b11111111;
 
-    mem_write_32(address, value);
+    uint64_t aligned_address = address & ~0b11;
+    uint32_t word = mem_read_32(aligned_address);
+
+    uint8_t byte_position = address & 0b11;
+    uint32_t mask = ~(0b11111111 << (byte_position * 8));
+    uint32_t new_word = (word & mask) | (value << (byte_position * 8));
+
+    mem_write_32(aligned_address, new_word);
     
-    // uint32_t new_value = (current_value & mask) | ((CURRENT_STATE.REGS[rt] & 0xFF) << (byte_offset * 8));
-    
-    // mem_write_32(address, new_value);
 }
 
 
