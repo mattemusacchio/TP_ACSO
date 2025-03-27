@@ -4,31 +4,31 @@
 #include <stdint.h>
 #include "shell.h"
 
-#define ADD_EXT_OP  0b10001011001
-#define ADD_IMM_OP  0b10010001
-#define ADDS_EXT_OP 0b10101011000
-#define ADDS_IMM_OP 0b10110001
-#define SUBS_EXT_OP 0b11101011000
-#define SUBS_IMM_OP 0b11110001
-#define HLT_OP      0b11010100010
-#define CMP_EXT_OP  0b11101011000
-#define ANDS_SR_OP  0b11101010000
-#define EOR_SR_OP   0b11001010000
-#define ORR_SR_OP   0b10101010000
-#define B_OP        0b000101
-#define BR_OP       0b11010110000
-#define B_COND_OP   0b01010100
-#define LSLR_IMM    0b110100110
-#define STUR_OP     0b11111000000
-#define STURB_OP    0b00111000000
-#define STURH_OP    0b01111000000
-#define LDUR        0b11111000010
-#define LDURB       0b00111000010
-#define LDURH       0b01111000010
-#define MUL         0b10011011000  
-#define MOVZ        0b110100101
-#define CBZ         0b10110100
-#define CBNZ        0b10110101
+#define ADD_EXT  0b10001011001
+#define ADD_IMM  0b10010001
+#define ADDS_EXT 0b10101011000
+#define ADDS_IMM 0b10110001
+#define SUBS_EXT 0b11101011000
+#define SUBS_IMM 0b11110001
+#define HLT      0b11010100010
+#define CMP_EXT  0b11101011000
+#define ANDS_SR  0b11101010000
+#define EOR_SR   0b11001010000
+#define ORR_SR   0b10101010000
+#define B        0b000101
+#define BR       0b11010110000
+#define B_COND   0b01010100
+#define LSLR_IMM 0b110100110
+#define STUR     0b11111000000
+#define STURB    0b00111000000
+#define STURH    0b01111000000
+#define LDUR     0b11111000010
+#define LDURB    0b00111000010
+#define LDURH    0b01111000010
+#define MUL      0b10011011000  
+#define MOVZ     0b110100101
+#define CBZ      0b10110100
+#define CBNZ     0b10110101
 
 void update_flags(int64_t result);
 void halt(uint32_t instruction);
@@ -41,7 +41,6 @@ void branch_conditional(uint32_t instruction);
 void lslr_imm(uint32_t instruction);
 void sturbh(uint32_t instruction, int sb);
 int64_t sign_extend(int64_t value, int bits);
-void ldur(uint32_t instruction);
 void ldurbh(uint32_t instruction, int b);
 void movz(uint32_t instruction);
 void mul(uint32_t instruction);
@@ -54,59 +53,62 @@ void process_instruction() {
     for (int length = 11; length >= 6; length--) { 
         opcode = (instruction >> (32 - length)) & ((1 << length) - 1);
         switch(opcode) {
-            case ADD_IMM_OP:
+            case ADD_IMM:
                 adds_subs_immediate(instruction, 0, 1);
                 break;
-            case ADDS_IMM_OP:
+            case ADDS_IMM:
                 adds_subs_immediate(instruction, 1, 1);
                 break;
-            case ADD_EXT_OP:
+            case ADD_EXT:
                 adds_subs_ext(instruction, 0, 1);
                 break;
-            case ADDS_EXT_OP:
+            case ADDS_EXT:
                 adds_subs_ext(instruction, 1, 1);
                 break;
-            case SUBS_IMM_OP:
+            case SUBS_IMM:
                 adds_subs_immediate(instruction, 1, 0);
                 break;
-            case SUBS_EXT_OP:
+            case SUBS_EXT:
                 adds_subs_ext(instruction, 1, 0);
                 break;
-            case ANDS_SR_OP:
+            case ANDS_SR:
                 logical_shifted_register(instruction, 0);
                 break;
-            case EOR_SR_OP:
+            case EOR_SR:
                 logical_shifted_register(instruction, 1);
                 break;
-            case ORR_SR_OP:
+            case ORR_SR:
                 logical_shifted_register(instruction, 2);
                 break;
-            case B_OP:
+            case B:
                 branch(instruction);
+                NEXT_STATE.REGS[31] = 0;
                 return;
-            case BR_OP:
+            case BR:
                 branch_register(instruction);
+                NEXT_STATE.REGS[31] = 0;
                 return;
-            case B_COND_OP:
+            case B_COND:
                 branch_conditional(instruction);
+                NEXT_STATE.REGS[31] = 0;
                 return;
-            case HLT_OP:
+            case HLT:
                 halt(instruction);
                 break;
             case LSLR_IMM:
                 lslr_imm(instruction);
                 break;
-            case STUR_OP:
+            case STUR:
                 sturbh(instruction, 0);
                 break;
-            case STURB_OP:
+            case STURB:
                 sturbh(instruction, 1);
                 break;
-            case STURH_OP:
+            case STURH:
                 sturbh(instruction, 2);
                 break;
             case LDUR:
-                ldur(instruction);
+                ldurbh(instruction, 2);
                 break;
             case LDURB:
                 ldurbh(instruction, 1);
@@ -128,7 +130,7 @@ void process_instruction() {
                 break;
         }
     }
-    CURRENT_STATE.REGS[31] = 0; //si sacamos esta linea queda = al test, pero esta mal eso en el test!
+    NEXT_STATE.REGS[31] = 0; //si sacamos esta linea queda = al test, pero esta mal eso en el test!
     NEXT_STATE.PC = CURRENT_STATE.PC + 4;
 }
 
@@ -229,7 +231,7 @@ void branch_register(uint32_t instruction) {
 
 void branch_conditional(uint32_t instruction) {
     uint8_t cond = instruction & 0b1111; 
-    int32_t imm19 = ((instruction >> 5) & 0x7FFFF);  //HAY EXA
+    int32_t imm19 = ((instruction >> 5) & 0b1111111111111111111);  
     int64_t offset = sign_extend(imm19, 19) << 2;  
     int should_branch = 0;
     switch(cond) {
@@ -324,27 +326,22 @@ void sturbh(uint32_t instruction, int sb) {
     }
 } 
 
-void ldur(uint32_t instruction) {
-    uint8_t Rn = (instruction >> 5) & 0b11111;    
-    uint8_t Rt = instruction & 0b11111;           
-    int16_t imm9 = (instruction >> 12) & 0b111111111;     
-    int64_t offset = sign_extend(imm9, 9);
-    uint64_t address = (uint64_t)CURRENT_STATE.REGS[Rn]; 
-    address = address + offset;
-    uint64_t lower = (uint64_t)mem_read_32(address);
-    uint64_t upper = (uint64_t)mem_read_32(address + 4);
-    uint64_t value = lower | (upper << 32);
-    NEXT_STATE.REGS[Rt] = value;
-}
-
 void ldurbh(uint32_t instruction, int b) {
     uint8_t Rn = (instruction >> 5) & 0b11111;    
     uint8_t Rt = instruction & 0b11111;           
     int16_t imm9 = (instruction >> 12) & 0b111111111;    
     int64_t offset = sign_extend(imm9, 9);
     uint64_t address = (uint64_t)CURRENT_STATE.REGS[Rn] + offset;
-    uint32_t word = mem_read_32(address);
-    uint32_t result_value = (b == 1) ? (word & 0b11111111) : (word & 0b1111111111111111);
+    uint64_t result_value;
+    if (b == 0 || b == 1){
+        uint32_t word = mem_read_32(address);
+        result_value = (b == 1) ? (word & 0b11111111) : (word & 0b1111111111111111);
+    }
+    else if (b == 2){
+        uint64_t lower = (uint64_t)mem_read_32(address);
+        uint64_t upper = (uint64_t)mem_read_32(address + 4);
+        result_value = lower | (upper << 32);
+    }
     NEXT_STATE.REGS[Rt] = result_value;
 }
 
@@ -380,5 +377,6 @@ void cbzn(uint32_t instruction, int bz){
         }
     }
 }
+
 
 
