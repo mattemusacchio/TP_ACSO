@@ -189,6 +189,7 @@ void adds_subs_immediate(uint32_t instruction, int update_flag, int addition){
         result = operand1 - imm;
     }
     NEXT_STATE.REGS[rd] = result;
+
     if (update_flag == 1){ 
         update_flags(result);
     }
