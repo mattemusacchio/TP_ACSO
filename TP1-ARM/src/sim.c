@@ -132,7 +132,7 @@ void process_instruction() {
                 break;
         }
     }
-    NEXT_STATE.REGS[31] = 0; //si sacamos esta linea queda = al test, pero esta mal eso en el test!
+    NEXT_STATE.REGS[31] = 0; 
     NEXT_STATE.PC = CURRENT_STATE.PC + 4;
 }
 
