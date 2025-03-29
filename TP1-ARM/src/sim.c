@@ -45,10 +45,7 @@ void ldurbh(uint32_t instruction, int b);
 void movz(uint32_t instruction);
 void mul(uint32_t instruction);
 void cbzn(uint32_t instruction, int bz);
-uint8_t get_rd(uint32_t instruction);
-uint8_t get_rn(uint32_t instruction);
-uint8_t get_rm(uint32_t instruction);
-uint32_t get_imm(uint32_t instruction, int shift, int bit_count);
+uint32_t decoder(uint32_t instruction, int shift, int bit_count);
 
 void process_instruction() {
     uint32_t instruction;
@@ -138,11 +135,7 @@ void process_instruction() {
     NEXT_STATE.PC = CURRENT_STATE.PC + 4;
 }
 
-uint8_t get_rd(uint32_t instruction) { return instruction & 0b11111; }
-uint8_t get_rn(uint32_t instruction) { return (instruction >> 5) & 0b11111; }
-uint8_t get_rm(uint32_t instruction) { return (instruction >> 16) & 0b11111; }
-
-uint32_t get_imm(uint32_t instruction, int shift, int bit_count){
+uint32_t decoder(uint32_t instruction, int shift, int bit_count){
     uint32_t mask = (1U << bit_count) - 1;
     uint32_t imm = (instruction >> shift) & mask;
     return imm;
@@ -180,8 +173,8 @@ void adds_subs_immediate(uint32_t instruction, int update_flag, int addition){
     uint8_t rd = instruction & 0b11111;
     uint8_t rn = (instruction >> 5) & 0b11111;
     uint8_t shift = (instruction >> 22) & 0b11;
-    uint32_t imm12 = get_imm(instruction, 10, 12);
-    // uint16_t imm12 = (instruction >> 10) & 0b111111111111;
+    // uint32_t imm12 = decoder(instruction, 10, 12); EJEMPLO D COMO USAR DECODER
+    uint16_t imm12 = (instruction >> 10) & 0b111111111111;
     uint64_t imm;
     if (shift == 0b00) {
         imm = (uint64_t)imm12;
