@@ -46,6 +46,7 @@ void movz(uint32_t instruction);
 void mul(uint32_t instruction);
 void cbzn(uint32_t instruction, int bz);
 uint32_t decoder(uint32_t instruction, int shift, int bit_count);
+void add_sub(uint64_t operand1, uint64_t operand2, uint8_t rd, int update_flag, int addition);
 
 void process_instruction() {
     uint32_t instruction;
@@ -150,6 +151,14 @@ void halt(uint32_t instruction){
     RUN_BIT = 0;
 }
 
+void add_sub(uint64_t operand1, uint64_t operand2, uint8_t rd, int update_flag, int addition) {
+    uint64_t result = addition ? operand1 + operand2 : operand1 - operand2;
+    NEXT_STATE.REGS[rd] = result;
+    if (update_flag) {
+        update_flags(result);
+    }
+}
+
 void adds_subs_ext(uint32_t instruction, int update_flag, int addition) {
     uint8_t rd = instruction & 0b11111;
     uint8_t rn = (instruction >> 5) & 0b11111;
@@ -157,16 +166,7 @@ void adds_subs_ext(uint32_t instruction, int update_flag, int addition) {
     uint64_t operand1 = CURRENT_STATE.REGS[rn];
     uint64_t operand2 = CURRENT_STATE.REGS[rm];
     uint64_t result;
-    if (addition == 1){
-        result = operand1 + operand2;
-    }
-    else if (addition == 0) {
-        result = operand1 - operand2;
-    }
-    NEXT_STATE.REGS[rd] = result;
-    if (update_flag == 1){
-        update_flags(result);
-    }
+    add_sub(operand1, operand2, rd, update_flag, addition);
 }
 
 void adds_subs_immediate(uint32_t instruction, int update_flag, int addition){
@@ -175,24 +175,9 @@ void adds_subs_immediate(uint32_t instruction, int update_flag, int addition){
     uint8_t shift = (instruction >> 22) & 0b11;
     // uint32_t imm12 = decoder(instruction, 10, 12); EJEMPLO D COMO USAR DECODER
     uint16_t imm12 = (instruction >> 10) & 0b111111111111;
-    uint64_t imm;
-    if (shift == 0b00) {
-        imm = (uint64_t)imm12;
-    } else if (shift == 0b01){
-        imm = (uint64_t)imm12 << 12;
-    }
+    uint64_t imm = (shift == 0b00) ? (uint64_t)imm12 : (uint64_t)imm12 << 12;
     uint64_t operand1 = CURRENT_STATE.REGS[rn];
-    uint64_t result;
-    if (addition == 1){
-        result = operand1 + imm;
-    }
-    else if (addition == 0){
-        result = operand1 - imm;
-    }
-    NEXT_STATE.REGS[rd] = result;
-    if (update_flag == 1){ 
-        update_flags(result);
-    }
+    add_sub(operand1, imm, rd, update_flag, addition);
 }
 
 int64_t sign_extend(int64_t value, int bits) {
