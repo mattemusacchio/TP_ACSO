@@ -45,6 +45,10 @@ void ldurbh(uint32_t instruction, int b);
 void movz(uint32_t instruction);
 void mul(uint32_t instruction);
 void cbzn(uint32_t instruction, int bz);
+uint8_t get_rd(uint32_t instruction);
+uint8_t get_rn(uint32_t instruction);
+uint8_t get_rm(uint32_t instruction);
+uint32_t get_imm(uint32_t instruction, int shift, int bit_count);
 
 void process_instruction() {
     uint32_t instruction;
@@ -134,6 +138,16 @@ void process_instruction() {
     NEXT_STATE.PC = CURRENT_STATE.PC + 4;
 }
 
+uint8_t get_rd(uint32_t instruction) { return instruction & 0b11111; }
+uint8_t get_rn(uint32_t instruction) { return (instruction >> 5) & 0b11111; }
+uint8_t get_rm(uint32_t instruction) { return (instruction >> 16) & 0b11111; }
+
+uint32_t get_imm(uint32_t instruction, int shift, int bit_count){
+    uint32_t mask = (1U << bit_count) - 1;
+    uint32_t imm = (instruction >> shift) & mask;
+    return imm;
+}
+
 void update_flags(int64_t result) {
     NEXT_STATE.FLAG_N = (result < 0) ? 1 : 0;
     NEXT_STATE.FLAG_Z = (result == 0) ? 1 : 0;
@@ -166,7 +180,8 @@ void adds_subs_immediate(uint32_t instruction, int update_flag, int addition){
     uint8_t rd = instruction & 0b11111;
     uint8_t rn = (instruction >> 5) & 0b11111;
     uint8_t shift = (instruction >> 22) & 0b11;
-    uint16_t imm12 = (instruction >> 10) & 0b111111111111;
+    uint32_t imm12 = get_imm(instruction, 10, 12);
+    // uint16_t imm12 = (instruction >> 10) & 0b111111111111;
     uint64_t imm;
     if (shift == 0b00) {
         imm = (uint64_t)imm12;
@@ -263,16 +278,16 @@ void branch_conditional(uint32_t instruction) {
 
 void lslr_imm(uint32_t instruction){
     uint8_t N = (instruction >> 22) & 0b1;
-    uint8_t imms = (instruction >> 10) & 0b111111;
+    uint8_t imm6 = (instruction >> 10) & 0b111111;
     uint8_t Rn = (instruction >> 5) & 0b11111;
     uint8_t Rd = instruction & 0b11111;
     uint64_t operand1 = CURRENT_STATE.REGS[Rn]; 
     uint64_t result;
-    if (N == 1 && imms != 0b111111){
-        uint8_t shift = 63 - imms;
+    if (N == 1 && imm6 != 0b111111){
+        uint8_t shift = 63 - imm6;
         result = operand1 << shift;
     }
-    else if (N ==1 && imms == 0b111111){
+    else if (N ==1 && imm6 == 0b111111){
         uint8_t shift = (instruction >> 16) & 0b111111;
         result = operand1 >> shift; 
     }
@@ -363,8 +378,8 @@ void mul(uint32_t instruction){
 
 void cbzn(uint32_t instruction, int bz){
     uint8_t Rt = instruction & 0b11111;
-    uint32_t imm = (instruction >> 5) & 0b1111111111111111111;
-    uint64_t offset = sign_extend(imm << 2, 21);
+    uint32_t imm19 = (instruction >> 5) & 0b1111111111111111111;
+    uint64_t offset = sign_extend(imm19 << 2, 21);
     uint64_t operand1 = CURRENT_STATE.REGS[Rt];
     if (bz == 1) {
         if (operand1 == 0){
