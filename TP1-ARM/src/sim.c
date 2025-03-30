@@ -155,12 +155,10 @@ void update_flags(int64_t result) {
     NEXT_STATE.FLAG_Z = (result == 0) ? 1 : 0;
 }
 
-
 int64_t sign_extend(int64_t value, int bits) {
     int64_t mask = 1LL << (bits - 1);
     return (value ^ mask) - mask;
 }
-
 
 void halt(uint32_t instruction){
     RUN_BIT = 0;
@@ -371,6 +369,3 @@ void cbzn(uint32_t instruction, int bz){
         NEXT_STATE.PC = CURRENT_STATE.PC + 4;
     }
 }
-
-
-
