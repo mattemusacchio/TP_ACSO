@@ -232,7 +232,7 @@ void branch_register(uint32_t instruction) {
 void branch_conditional(uint32_t instruction) {
     uint8_t cond = instruction & 0b1111; 
     int32_t imm19 = ((instruction >> 5) & 0b1111111111111111111);  
-    int64_t offset = sign_extend(imm19, 19) << 2;  
+    int32_t offset = ((int32_t)(imm19 << 13)) >> 11;
     int should_branch = 0;
     switch(cond) {
         case EQ: 
@@ -361,7 +361,7 @@ void mul(uint32_t instruction){
 void cbzn(uint32_t instruction, int bz){
     uint8_t rt = get_rd(instruction);
     uint32_t imm19 = (instruction >> 5) & 0b1111111111111111111;
-    uint64_t offset = sign_extend(imm19 << 2, 21);
+    int64_t offset = ((int32_t)(imm19 << 13)) >> 11;
     uint64_t operand1 = CURRENT_STATE.REGS[rt];
     if ((bz == 1 && operand1 == 0) || (bz == 0 && operand1 != 0)) {
         NEXT_STATE.PC = CURRENT_STATE.PC + offset;
