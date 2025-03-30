@@ -279,26 +279,23 @@ void sturbh(uint32_t instruction, int sb) {
     int64_t offset = sign_extend(imm9, 9);
     uint64_t address = CURRENT_STATE.REGS[rn] + offset;
     uint64_t current_value = CURRENT_STATE.REGS[rt];
-    uint64_t aligned_address;
-    uint64_t new_word;
     if (sb == 0) {
         mem_write_32(address, current_value & 0b11111111111111111111111111111111);      
-        mem_write_32(address + 4, current_value >> 32);   
+        mem_write_32(address + 4, current_value >> 32);  
+        return;
     }
+    uint64_t aligned_address = address & ~0b11;
+    uint8_t byte_position = address & 0b11;
+    uint32_t word = mem_read_32(aligned_address);
+    uint64_t new_word;
     if (sb == 1) {
         uint8_t value = current_value & 0b11111111;
-        aligned_address = address & ~0b11;
-        uint32_t word = mem_read_32(aligned_address);
-        uint8_t byte_position = address & 0b11;
         uint32_t mask = ~(0b11111111 << (byte_position * 8));
         new_word = (word & mask) | (value << (byte_position * 8));
         mem_write_32(aligned_address, new_word);
     }
-    if (sb == 2) {
+    else if (sb == 2) {
         uint16_t value = current_value & 0xFFFF; //HAY EXA
-        aligned_address = address & ~0b11; 
-        uint32_t word = mem_read_32(aligned_address); //lee 4 primeros bytes 
-        uint8_t byte_position = address & 0b11;
         if (byte_position == 3) {
             uint32_t mask1 = ~(0xFF << 24);   //0000000001111111111 HAY EXA
             uint32_t insert1 = (value & 0xFF) << 24; //value0000000 HAY EXA
