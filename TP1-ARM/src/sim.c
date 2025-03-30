@@ -225,7 +225,7 @@ void branch(uint32_t instruction) {
 }
 
 void branch_register(uint32_t instruction) {
-    uint8_t rn = instruction & 0b11111;   // chequea aca tete q estas sacando los primer 5 bits en vez de los del bit 5 al 9!!
+    uint8_t rn = get_rn(instruction);
     NEXT_STATE.PC = CURRENT_STATE.REGS[rn];
 }
 
