@@ -4,7 +4,7 @@
 #include <stdint.h>
 #include "shell.h"
 
-#define ADD_EXT  0b10001011001
+#define ADD_EXT  0b10001011000
 #define ADD_IMM  0b10010001
 #define ADDS_EXT 0b10101011000
 #define ADDS_IMM 0b10110001
