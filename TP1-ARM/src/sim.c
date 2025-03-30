@@ -256,9 +256,9 @@ void branch_conditional(uint32_t instruction) {
 void lslr_imm(uint32_t instruction){
     uint8_t N = (instruction >> 22) & 0b1;
     uint8_t imm6 = (instruction >> 10) & 0b111111;
-    uint8_t Rn = (instruction >> 5) & 0b11111;
-    uint8_t Rd = instruction & 0b11111;
-    uint64_t operand1 = CURRENT_STATE.REGS[Rn]; 
+    uint8_t rn = get_rn(instruction);
+    uint8_t rd = get_rd(instruction);
+    uint64_t operand1 = CURRENT_STATE.REGS[rn]; 
     uint64_t result;
     if (N == 1 && imm6 != 0b111111){
         uint8_t shift = 63 - imm6;
@@ -268,12 +268,12 @@ void lslr_imm(uint32_t instruction){
         uint8_t shift = (instruction >> 16) & 0b111111;
         result = operand1 >> shift; 
     }
-    NEXT_STATE.REGS[Rd] = result;
+    NEXT_STATE.REGS[rd] = result;
 }
 
 void sturbh(uint32_t instruction, int sb) {
-    uint8_t rt = instruction & 0b11111;         
-    uint8_t rn = (instruction >> 5) & 0b11111;  
+    uint8_t rt = get_rd(instruction);        
+    uint8_t rn = get_rn(instruction); 
     uint16_t imm9 = (instruction >> 12) & 0b111111111;
     int64_t offset = sign_extend(imm9, 9);
     uint64_t address = CURRENT_STATE.REGS[rn] + offset;
@@ -316,11 +316,11 @@ void sturbh(uint32_t instruction, int sb) {
 } 
 
 void ldurbh(uint32_t instruction, int b) {
-    uint8_t Rn = (instruction >> 5) & 0b11111;    
-    uint8_t Rt = instruction & 0b11111;           
+    uint8_t rn = get_rn(instruction);   
+    uint8_t rt = get_rd(instruction);          
     int16_t imm9 = (instruction >> 12) & 0b111111111;    
     int64_t offset = sign_extend(imm9, 9);
-    uint64_t address = (uint64_t)CURRENT_STATE.REGS[Rn] + offset;
+    uint64_t address = (uint64_t)CURRENT_STATE.REGS[rn] + offset;
     uint64_t result_value;
     if (b == 0 || b == 1){
         uint32_t word = mem_read_32(address);
@@ -331,30 +331,30 @@ void ldurbh(uint32_t instruction, int b) {
         uint64_t upper = (uint64_t)mem_read_32(address + 4);
         result_value = lower | (upper << 32);
     }
-    NEXT_STATE.REGS[Rt] = result_value;
+    NEXT_STATE.REGS[rt] = result_value;
 }
 
 void movz(uint32_t instruction) {
-    uint8_t rd = instruction & 0b11111;         
+    uint8_t rd = get_rd(instruction);        
     uint16_t imm16 = (instruction >> 5) & 0b1111111111111111;  
     uint64_t result = (uint64_t)imm16;
     NEXT_STATE.REGS[rd] = result;
 }
 
 void mul(uint32_t instruction){
-    uint8_t Rd = instruction & 0b11111;
-    uint8_t Rn = (instruction >> 5) & 0b11111;
-    uint8_t Rm = (instruction >> 16) & 0b11111;
+    uint8_t rd = get_rd(instruction);
+    uint8_t rn = get_rn(instruction);
+    uint8_t rm = get_rm(instruction);
     uint64_t result;
-    result = CURRENT_STATE.REGS[Rn] * CURRENT_STATE.REGS[Rm];
-    NEXT_STATE.REGS[Rd] = result;
+    result = CURRENT_STATE.REGS[rn] * CURRENT_STATE.REGS[rm];
+    NEXT_STATE.REGS[rd] = result;
 }
 
 void cbzn(uint32_t instruction, int bz){
-    uint8_t Rt = instruction & 0b11111;
+    uint8_t rt = get_rd(instruction);
     uint32_t imm19 = (instruction >> 5) & 0b1111111111111111111;
     uint64_t offset = sign_extend(imm19 << 2, 21);
-    uint64_t operand1 = CURRENT_STATE.REGS[Rt];
+    uint64_t operand1 = CURRENT_STATE.REGS[rt];
     if ((bz == 1 && operand1 == 0) || (bz == 0 && operand1 != 0)) {
         NEXT_STATE.PC = CURRENT_STATE.PC + offset;
     } else {
