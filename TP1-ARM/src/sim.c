@@ -45,8 +45,10 @@ void ldurbh(uint32_t instruction, int b);
 void movz(uint32_t instruction);
 void mul(uint32_t instruction);
 void cbzn(uint32_t instruction, int bz);
-uint32_t decoder(uint32_t instruction, int shift, int bit_count);
 void add_sub(uint64_t operand1, uint64_t operand2, uint8_t rd, int update_flag, int addition);
+uint8_t get_rd(uint32_t instruction);
+uint8_t get_rn(uint32_t instruction);
+uint8_t get_rm(uint32_t instruction);
 
 void process_instruction() {
     uint32_t instruction;
@@ -136,7 +138,9 @@ void process_instruction() {
     NEXT_STATE.PC = CURRENT_STATE.PC + 4;
 }
 
-
+uint8_t get_rd(uint32_t instruction) { return instruction & 0b11111; }
+uint8_t get_rn(uint32_t instruction) { return (instruction >> 5) & 0b11111; }
+uint8_t get_rm(uint32_t instruction) { return (instruction >> 16) & 0b11111; }
 
 void update_flags(int64_t result) {
     NEXT_STATE.FLAG_N = (result < 0) ? 1 : 0;
@@ -156,9 +160,9 @@ void add_sub(uint64_t operand1, uint64_t operand2, uint8_t rd, int update_flag, 
 }
 
 void adds_subs_ext(uint32_t instruction, int update_flag, int addition) {
-    uint8_t rd = instruction & 0b11111;
-    uint8_t rn = (instruction >> 5) & 0b11111;
-    uint8_t rm = (instruction >> 16) & 0b11111;
+    uint8_t rd = get_rd(instruction);
+    uint8_t rn = get_rn(instruction);
+    uint8_t rm = get_rm(instruction);
     uint64_t operand1 = CURRENT_STATE.REGS[rn];
     uint64_t operand2 = CURRENT_STATE.REGS[rm];
     uint64_t result;
@@ -166,8 +170,8 @@ void adds_subs_ext(uint32_t instruction, int update_flag, int addition) {
 }
 
 void adds_subs_immediate(uint32_t instruction, int update_flag, int addition){
-    uint8_t rd = instruction & 0b11111;
-    uint8_t rn = (instruction >> 5) & 0b11111;
+    uint8_t rd = get_rd(instruction);
+    uint8_t rn = get_rn(instruction);
     uint8_t shift = (instruction >> 22) & 0b11;
     uint16_t imm12 = (instruction >> 10) & 0b111111111111;
     uint64_t imm = (shift == 0b00) ? (uint64_t)imm12 : (uint64_t)imm12 << 12;
@@ -181,9 +185,9 @@ int64_t sign_extend(int64_t value, int bits) {
 }
 
 void logical_shifted_register(uint32_t instruction, int op) {
-    uint8_t rd = instruction & 0b11111;
-    uint8_t rn = (instruction >> 5) & 0b11111;
-    uint8_t rm = (instruction >> 16) & 0b11111;
+    uint8_t rd = get_rd(instruction);
+    uint8_t rn = get_rn(instruction);
+    uint8_t rm = get_rm(instruction);
     uint64_t operand1 = CURRENT_STATE.REGS[rn];
     uint64_t operand2 = CURRENT_STATE.REGS[rm];
     uint64_t result;
@@ -213,7 +217,7 @@ void branch(uint32_t instruction) {
 }
 
 void branch_register(uint32_t instruction) {
-    uint8_t rn = instruction & 0b11111;  
+    uint8_t rn = instruction & 0b11111;   // chequea aca tete q estas sacando los primer 5 bits en vez de los del bit 5 al 9!!
     NEXT_STATE.PC = CURRENT_STATE.REGS[rn];
 }
 
