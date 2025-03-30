@@ -136,11 +136,7 @@ void process_instruction() {
     NEXT_STATE.PC = CURRENT_STATE.PC + 4;
 }
 
-uint32_t decoder(uint32_t instruction, int shift, int bit_count){
-    uint32_t mask = (1U << bit_count) - 1;
-    uint32_t imm = (instruction >> shift) & mask;
-    return imm;
-}
+
 
 void update_flags(int64_t result) {
     NEXT_STATE.FLAG_N = (result < 0) ? 1 : 0;
@@ -173,7 +169,6 @@ void adds_subs_immediate(uint32_t instruction, int update_flag, int addition){
     uint8_t rd = instruction & 0b11111;
     uint8_t rn = (instruction >> 5) & 0b11111;
     uint8_t shift = (instruction >> 22) & 0b11;
-    // uint32_t imm12 = decoder(instruction, 10, 12); EJEMPLO D COMO USAR DECODER
     uint16_t imm12 = (instruction >> 10) & 0b111111111111;
     uint64_t imm = (shift == 0b00) ? (uint64_t)imm12 : (uint64_t)imm12 << 12;
     uint64_t operand1 = CURRENT_STATE.REGS[rn];
@@ -295,20 +290,20 @@ void sturbh(uint32_t instruction, int sb) {
         mem_write_32(aligned_address, new_word);
     }
     else if (sb == 2) {
-        uint16_t value = current_value & 0xFFFF; //HAY EXA
+        uint16_t value = current_value & 0b1111111111111111; 
         if (byte_position == 3) {
-            uint32_t mask1 = ~(0xFF << 24);   //0000000001111111111 HAY EXA
-            uint32_t insert1 = (value & 0xFF) << 24; //value0000000 HAY EXA
-            new_word = (word & mask1) | insert1; //priumero toma ultimos 3 bytes del word q es lo q leimos del address q mandaron 0000003byw cuanDO HACE EL INSERT VALUE  Y ULTIMOS 3 BYTES 
+            uint32_t mask1 = ~(0b11111111 << 24);   
+            uint32_t insert1 = (value & 0b11111111) << 24; 
+            new_word = (word & mask1) | insert1; 
             mem_write_32(aligned_address, new_word);
             uint32_t word2 = mem_read_32(aligned_address + 4);
-            uint32_t mask2 = ~0xFF; //HAY EXA
-            uint32_t insert2 = (value >> 8) & 0xFF; //HAY EXA
+            uint32_t mask2 = ~0b11111111; 
+            uint32_t insert2 = (value >> 8) & 0b11111111; 
             uint32_t new_word2 = (word2 & mask2) | insert2;
             mem_write_32(aligned_address + 4, new_word2);
             return;
         } else {
-            uint32_t mask = ~(0xFFFF << (byte_position * 8)); //HAY EXA
+            uint32_t mask = ~(0b1111111111111111 << (byte_position * 8)); 
             uint32_t insert = value << (byte_position * 8);
             new_word = (word & mask) | insert;
             mem_write_32(aligned_address, new_word);
@@ -337,7 +332,7 @@ void ldurbh(uint32_t instruction, int b) {
 
 void movz(uint32_t instruction) {
     uint8_t rd = instruction & 0b11111;         
-    uint16_t imm16 = (instruction >> 5) & 0xFFFF;  // HAY EXA
+    uint16_t imm16 = (instruction >> 5) & 0b1111111111111111;  
     uint64_t result = (uint64_t)imm16;
     NEXT_STATE.REGS[rd] = result;
 }
