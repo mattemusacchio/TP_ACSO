@@ -220,7 +220,7 @@ void logical_shifted_register(uint32_t instruction, int op) {
 
 void branch(uint32_t instruction) {
     int32_t imm26 = instruction & 0b11111111111111111111111111; 
-    int64_t offset = sign_extend(imm26, 26) << 2; 
+    int64_t offset = ((int32_t)(imm26 << 6)) >> 4;
     NEXT_STATE.PC = CURRENT_STATE.PC + offset;
 }
 
