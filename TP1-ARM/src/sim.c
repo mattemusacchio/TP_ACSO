@@ -29,6 +29,12 @@
 #define MOVZ     0b110100101
 #define CBZ      0b10110100
 #define CBNZ     0b10110101
+#define EQ       0b0000
+#define NE       0b0001
+#define GT       0b1010
+#define LT       0b1011
+#define GE       0b1100
+#define LE       0b1101
 
 void update_flags(int64_t result);
 void halt(uint32_t instruction);
@@ -128,9 +134,11 @@ void process_instruction() {
                 break;
             case CBZ:
                 cbzn(instruction, 1);
+                NEXT_STATE.REGS[31] = 0; 
                 return;
             case CBNZ:
                 cbzn(instruction, 0);
+                NEXT_STATE.REGS[31] = 0; 
                 return;
         }
     }
@@ -227,22 +235,22 @@ void branch_conditional(uint32_t instruction) {
     int64_t offset = sign_extend(imm19, 19) << 2;  
     int should_branch = 0;
     switch(cond) {
-        case 0b0000: 
+        case EQ: 
             should_branch = CURRENT_STATE.FLAG_Z;
             break;
-        case 0b0001: 
+        case NE: 
             should_branch = !CURRENT_STATE.FLAG_Z;
             break;
-        case 0b1010:
+        case GT:
             should_branch = (!CURRENT_STATE.FLAG_N || CURRENT_STATE.FLAG_Z);
             break;
-        case 0b1011:
+        case LT:
             should_branch = (CURRENT_STATE.FLAG_N && !CURRENT_STATE.FLAG_Z);
             break;
-        case 0b1100: 
+        case GE: 
             should_branch = (!CURRENT_STATE.FLAG_Z && !CURRENT_STATE.FLAG_N);
             break;
-        case 0b1101:
+        case LE:
             should_branch = (CURRENT_STATE.FLAG_Z || CURRENT_STATE.FLAG_N);
             break;
     }
