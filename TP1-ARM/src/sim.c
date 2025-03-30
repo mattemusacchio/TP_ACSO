@@ -126,10 +126,10 @@ void process_instruction() {
                 break;
             case CBZ:
                 cbzn(instruction, 1);
-                break;
+                return;
             case CBNZ:
                 cbzn(instruction, 0);
-                break;
+                return;
         }
     }
     NEXT_STATE.REGS[31] = 0; 
@@ -356,15 +356,10 @@ void cbzn(uint32_t instruction, int bz){
     uint32_t imm19 = (instruction >> 5) & 0b1111111111111111111;
     uint64_t offset = sign_extend(imm19 << 2, 21);
     uint64_t operand1 = CURRENT_STATE.REGS[Rt];
-    if (bz == 1) {
-        if (operand1 == 0){
-            NEXT_STATE.PC = CURRENT_STATE.PC + offset;
-        }
-    }
-    else if (bz == 0) {
-        if (operand1 != 0){
-            NEXT_STATE.PC = CURRENT_STATE.PC + offset;
-        }
+    if ((bz == 1 && operand1 == 0) || (bz == 0 && operand1 != 0)) {
+        NEXT_STATE.PC = CURRENT_STATE.PC + offset;
+    } else {
+        NEXT_STATE.PC = CURRENT_STATE.PC + 4;
     }
 }
 
