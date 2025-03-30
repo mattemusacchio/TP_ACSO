@@ -46,7 +46,6 @@ void branch_register(uint32_t instruction);
 void branch_conditional(uint32_t instruction);
 void lslr_imm(uint32_t instruction);
 void sturbh(uint32_t instruction, int sb);
-int64_t sign_extend(int64_t value, int bits);
 void ldurbh(uint32_t instruction, int b);
 void movz(uint32_t instruction);
 void mul(uint32_t instruction);
@@ -187,11 +186,6 @@ void adds_subs_immediate(uint32_t instruction, int update_flag, int addition){
     add_sub(operand1, imm, rd, update_flag, addition);
 }
 
-int64_t sign_extend(int64_t value, int bits) {
-    int64_t mask = 1LL << (bits - 1);
-    return (value ^ mask) - mask;
-}
-
 void logical_shifted_register(uint32_t instruction, int op) {
     uint8_t rd = get_rd(instruction);
     uint8_t rn = get_rn(instruction);
@@ -283,7 +277,7 @@ void sturbh(uint32_t instruction, int sb) {
     uint8_t rt = get_rd(instruction);        
     uint8_t rn = get_rn(instruction); 
     uint16_t imm9 = (instruction >> 12) & 0b111111111;
-    int64_t offset = sign_extend(imm9, 9);
+    int64_t offset = ((int64_t)(imm9 << 55)) >> 55;
     uint64_t address = CURRENT_STATE.REGS[rn] + offset;
     uint64_t current_value = CURRENT_STATE.REGS[rt];
     if (sb == 0) {
@@ -327,7 +321,7 @@ void ldurbh(uint32_t instruction, int b) {
     uint8_t rn = get_rn(instruction);   
     uint8_t rt = get_rd(instruction);          
     int16_t imm9 = (instruction >> 12) & 0b111111111;    
-    int64_t offset = sign_extend(imm9, 9);
+    int64_t offset = ((int64_t)(imm9 << 55)) >> 55;
     uint64_t address = (uint64_t)CURRENT_STATE.REGS[rn] + offset;
     uint64_t result_value;
     if (b == 0 || b == 1){
