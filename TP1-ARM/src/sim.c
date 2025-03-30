@@ -31,9 +31,9 @@
 #define CBNZ     0b10110101
 #define EQ       0b0000
 #define NE       0b0001
-#define GT       0b1010
+#define GT       0b1100
 #define LT       0b1011
-#define GE       0b1100
+#define GE       0b1010
 #define LE       0b1101
 
 void update_flags(int64_t result);
@@ -241,13 +241,13 @@ void branch_conditional(uint32_t instruction) {
         case NE: 
             should_branch = !CURRENT_STATE.FLAG_Z;
             break;
-        case GT:
+        case GE:
             should_branch = (!CURRENT_STATE.FLAG_N || CURRENT_STATE.FLAG_Z);
             break;
         case LT:
             should_branch = (CURRENT_STATE.FLAG_N && !CURRENT_STATE.FLAG_Z);
             break;
-        case GE: 
+        case GT: 
             should_branch = (!CURRENT_STATE.FLAG_Z && !CURRENT_STATE.FLAG_N);
             break;
         case LE:
