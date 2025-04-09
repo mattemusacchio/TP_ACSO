@@ -1,0 +1,42 @@
+Universidad de San Andrés  
+I301 - Arquitectura de computadoras y Sistemas Operativos  
+Fecha de entrega: 16/04/2025
+
+Criterio de aprobación  
+Este trabajo práctico se compone de dos ejercicios. En el primero se deben implementar unas funciones específicas utilizando C y Assembler. El segundo ejercicio consta de analizar un ejecutable bomb y descifrar los inputs correctos para desactivarlo sin que explote.
+
+Ejercicio 1  
+Implementar funciones sobre una lista doblemente enlazada, en C y en assembler. Los archivos principales son: ej1.asm, ej1.c, ej1.h, main.c, runMain.sh, runTester.sh, tester.c.
+
+Funciones a implementar (en C y Assembler):
+1. Crear lista.
+2. Crear nodo.
+3. Agregar nodo al final.
+4. Concatenar hashes de nodos con mismo tipo.
+
+Ejercicio 2  
+Desactivar una bomba binaria compilada usando técnicas de ingeniería inversa. Cada bomba tiene 4 fases; deben desactivar al menos 3. Las bombas están indexadas en una planilla y se descargan desde un servidor de red. Se debe usar GDB, objdump, strings, nm, entre otras herramientas, para analizar el ejecutable.
+
+Entrega  
+El repositorio de GitHub debe contener todos los archivos proporcionados, `input.txt` con los inputs correctos para al menos 3 fases, y `respuestas_descripcion.txt` explicando cómo se resolvieron las fases.
+
+Herramientas útiles:  
+- `nm bomb`: ver símbolos  
+- `strings bomb`: ver cadenas  
+- `objdump -d -M intel bomb`: desensamblar  
+- `gdb bomb`: debuggear  
+- `.gdbinit` para configuración
+
+Tips:  
+- Usar breakpoints para evitar que explote.  
+- Redirigir salida de objdump para análisis.  
+- Estudiar pasajes de parámetros y pila.  
+
+Debugger – GDB comandos útiles:  
+- `b FUNC`: breakpoint en función  
+- `s`, `n`, `si`, `ni`: step/next  
+- `x/Nuf ADDR`: examinar memoria  
+- `file bomb`: verificar tipo de binario ELF  
+
+El ejecutable es ELF de 64 bits, x86-64, estáticamente enlazado y con info de debug.
+

@@ -1,0 +1,119 @@
+
+Universidad de San Andrés 
+I301 - Arquitectura de computadoras y Sistemas Operativos 
+
+Fecha de entrega: 16/04/2025 
+
+Criterio de aprobación 
+
+Este trabajo práctico se compone de dos ejercicios, en el primer ejercicio se deben 
+implementar unas funciones específicas utilizando el lenguaje de programación C y 
+Assembler. El segundo ejercicio consta de analizar un ejecutable bomb y descifrar, 
+con las herramientas que se provee en el enunciado, cuáles son los inputs que 
+necesita para que esta no explote. 
+
+Criterio de aprobación del ejercicio 1: 
+
+Tiene que pasar todos los test (runTester.sh tiene que dar ok, como la captura) que 
+se proveen con el ejercicio tanto para la implementación en C y Assembly.  
+
+Criterio de aprobación del ejercicio 2: 
+
+En este caso se considera aprobado aquellas entregas que lleguen a desactivar 
+hasta las fase 3 (inclusive) de la bomba.  
+
+Ejercicio 1 
+
+El objetivo de este ejercicio es tener una primera experiencia programando en 
+assembler y además solidificar los conceptos sobre la pila que necesitaran para el 
+próximo ejercicio.  
+
+Antes de empezar: 
+
+En el directorio de este ejercicio encontrarán los siguientes archivos: 
+
+● Makefile 
+● ej1.asm 
+● ej1.c 
+● ej1.h 
+● main.c 
+● runMain.sh 
+● runTester.sh 
+● tester.c 
+● salida.catedra.ej1.txt 
+
+Los archivos sobre los que deben trabajar son “ej1.asm” y “ej1.c”, aquí deberán 
+implementar las funciones solicitadas en este enunciado. 
+
+El archivo "ej1.h" contiene las declaraciones de las estructuras y funciones. En la 
+línea 8 de este archivo se encuentra la variable USE_ASM_IMPL, la cual está 
+inicializada en 1 para probar la implementación en ensamblador. Si se desea 
+evaluar la implementación en C, es necesario cambiar su valor a 0. 
+
+El archivo “main.c” es para que ustedes realicen sus propias pruebas. Siéntanse a 
+gusto de manejarlo como crean conveniente. Para compilar el código y poder correr 
+las pruebas cortas implementadas en main, deberá ejecutar: 
+
+$ make main 
+$ ./runMain.sh 
+
+“runMain.sh” verifica que no se pierde memoria ni se realizan accesos incorrectos a 
+la misma. 
+
+Para compilar el código y correr las pruebas intensivas, deberá ejecutar: 
+
+$ ./runTester.sh 
+
+En este punto se usa el archivo salida.catedra.ej1.txt para comparar, la salida que 
+produce su código con el de la cátedra. En caso de que haya discrepancias pueden 
+usar el archivo salida.caso.propio.ej1.txt (que se autogenera) para comparar en 
+qué punto concreto se necesita el fix. 
+
+El objetivo específico de este ejercicio es implementar un conjunto de funciones 
+sobre una lista doblemente enlazada de tamaño variable. Las funciones deberán 
+ser implementadas en C y en Assembler 
+
+Para ello, tenemos una estructura que indica el primer y el último nodo, y cada nodo 
+tiene punteros al anterior y al siguiente. Además, cada nodo tiene un tipo y un hash. 
+Definición de las estructuras: 
+/** Lista **/ 
+
+typedef struct string_proc_list_t { 
+    struct string_proc_node_t* first; 
+    struct string_proc_node_t* last; 
+} string_proc_list; 
+
+/** Nodo **/ 
+
+typedef struct string_proc_node_t { 
+    struct string_proc_node_t* next; 
+    struct string_proc_node_t* previous; 
+    uint8_t type; 
+    char* hash; 
+} string_proc_node; 
+
+Funciones a implementar: 
+
+1 
+string_proc_list* string_proc_list_create(void); 
+string_proc_list* string_proc_list_create_asm(void); 
+Inicializa una estructura de lista. 
+
+2 
+string_proc_node* string_proc_node_create(uint8_t type, char* hash); 
+string_proc_node* string_proc_node_create_asm(uint8_t type, char* hash); 
+Inicializa un nodo con el tipo y el hash dado. 
+El nodo tiene que apuntar al hash pasado por parámetro (no hay que copiarlo). 
+
+3 
+void string_proc_list_add_node(string_proc_list* list, uint8_t type, char* hash); 
+void string_proc_list_add_node_asm(string_proc_list* list, uint8_t type, char* hash); 
+Agrega un nodo nuevo al final de la lista con el tipo y el hash dado. 
+Recordar que no se debe copiar el hash, sino apuntar al mismo. 
+
+4 
+char* string_proc_list_concat(string_proc_list* list, uint8_t type, char* hash); 
+char* string_proc_list_concat_asm(string_proc_list* list, uint8_t type, char* hash); 
+Genera un nuevo hash concatenando el pasado por parámetro con todos los hashes 
+de los nodos de la lista cuyos tipos coinciden con el pasado por parámetro 
+...
