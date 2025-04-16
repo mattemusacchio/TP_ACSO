@@ -1,0 +1,50 @@
+Matteo Musacchio - mmusacchio@udesa.edu.ar 
+
+Fase 1:
+Respuesta: Cada uno es como Dios le hizo, y aun peor muchas veces.
+
+Esta fase es bastante simple,
+vemos que se llama a strings_not_equal, asi que facilmente se entiende que se va a estar comparando un string (nuestro input) con otro string, que ese string sabemos que va a estar en rsi, que es el primer argumento de la funcion. Entonces vemos que rsi es [rip + 0xc7c62], donde rip = 401df6
+entonces vemos que hay en el registro de memoria 4c9a58 usando x/s 0x4c9a58, y vemos que es "Cada uno es como Dios le hizo, y aun peor muchas veces."
+
+Fase 2:
+Respuestra: 5 -3 -4 
+
+En terminos generales podemos ver la funcion y nos damos cuenta que guardan 3 registros que vamos a escribir como input en forma de numeros, en rbp se va a guardar el primer numero, rbx el segundo y r12 el tercero. Mas adelante vemos que se hace un xor entre ebx y ebp, que son lo mismo que rbx xor rbp, entonces seria un xor entre el primero y el segundo numero, luego se hace un shift right osea que el numero se divide por 2, y esto es lo que nos deberia dar el tercer numero (r12 que se guardo en rax o eax) y se hace el cmp. Ademas tenemos un call a la funcion misterio que simplemente verifica que el resultado tiene que ser negativo.
+
+Fase 3:
+Respuesta: aboquillar 7 abrete_sesamo
+
+En esta fase vemos que tenemos que usar las palabras de el archivo palabras.txt y un numero que se encuentra entre 6 y 11, (este numero se guarda en ebp) que nos damos cuenta por los distintos cmp que hay en 401fd8 y 4020ca. Ademas tenemos la funcion cuenta que es una función recursiva que hace una busqueda binaria en una tabla de strings, y tengo que encontrar una palabra que tarde la cantidad de iteraciones en encontrarse igual que el numero que puse en el input. (No entendi muy bien de que depende cuanto tarda en encontrarse la palabra pero como probe 7 iteraciones y printee en ese momento la tabla me dio el resultado)
+El abrete_sesamo fue para entrar a la fase secreta.
+
+Fase 4:
+Respuesta: 4 101
+
+En este caso tenemos una lista, que podemos ver con x/40wd 0x4cde20, y es en esta parte del codigo: desde 40218d hasta 4021a1
+
+  que nos damos cuenta de lo que necesitamos hacer con esa lista. Primero tenemos que encontrar que en esa lista terminemos en el valor 15 porque en el cmp de 402192 vemos que se fija cuando termina en 15. Pero ademas tenemos que encontar un valor en donde se empiece a recorrer la lista, y que tarde 13 pasos en terminar en el valor 15, ese valor seria el primero del input, nos damos cuenta de esto porque edx es la cantidad de pasos, que vemos que se compara con 0xd (13). Luego el segundo numero del input va a ser la suma total del camino recorrido, que podemos encontrar en el registro ecx, porque vemos que  en 402190 se va sumando el eax, que es el valor actual.
+  Entonces cuando printeamos la lista vemos los numeros y vamos recorriendo cada valor siguiendo su indice empezando desde el valor 15 y asi vamos viendo hasta que contamos 13 y llegamos a el valor 4.
+
+Fase Secreta:
+Respuesta: 35
+
+Para ingresar a la fase secreta es muy parecido a la fase 1, vemos que se llama a strings_not_equal, y vemos que rsi es [rip + 0xc4a99], donde rip = 4026b6 --> x/s 0x4c714f y nos da abrete_sesamo. Pero esto todavia no sabemos en donde meterlo, entonces si printeamos que nos pide el scanf de 402692, notamos que dice %s %d %s, y luego de probar un poco por todos lados me di cuenta que lo tenia que poner al final de la fase 3, que era el unico que complia con el formato y no habia mas informacion como para sacar de algun lado otro string y un numero entonces era eso.
+
+Luego adentro de la fase secreta, el numero que ponemos se guarda en rax y tiene que estar entre 1 y 1000. Despues llama a la funcion fun7, y vemos que tenemos un arbol binario, Devuelve el índice del nodo en un árbol binario, mostrando el camino recorrido desde el nodo hasta la raiz.
+izquierda: 2 * i
+derecha: (2 * i) + 1
+
+Entonces vemos que yo tenia que encontrar el nodo que tenia un camino de 6, entonces adentro de la funcion fun7 vamos viendo nodo por nodo hasta encontrar uno que el camino desde la raiz seria izquierda derecha derecha.
+
+set $n1 = 0x4f91f0
+
+set $n2 = *(void**)($n1 + 8)
+
+set $n3 = *(void**)($n2 + 16)
+
+set $n6 = *(void**)($n3 + 16)
+
+x/wd $n6
+
+con esto pudimos ver exactamente el nodo de camino 6, que es el que tiene el valor 35.
