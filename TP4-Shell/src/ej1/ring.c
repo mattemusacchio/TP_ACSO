@@ -4,185 +4,145 @@
 #include <unistd.h>
 #include <sys/wait.h>
 
-// Comunicación básica entre procesos  
-// Como warm up para este primer ejercicio, el objetivo es implementar un esquema 
-// de comunicación en forma de anillo para interconectar los procesos. En un esquema 
-// de anillo se da con al menos tres procesos están conectados formando un bucle 
-// cerrado. Cada proceso está comunicado exactamente con dos procesos: su 
-// predecesor y su sucesor. Recibe un mensaje del predecesor y lo envía al sucesor. 
-// En este caso, la comunicación se llevará a cabo a través de pipes, las cuales deben 
-// ser implementadas. 
- 
- 
-// Al inicio, alguno de los procesos del anillo recibirá del padre un número entero 
-// como mensaje a transmitir. Este mensaje será enviado al siguiente proceso en el 
-// anillo, quien, tras recibirlo, lo incrementará en uno y luego lo enviará al siguiente 
-// proceso en el anillo. Este proceso continuará hasta que el proceso que inició la 
-// comunicación reciba, del último proceso, el resultado del mensaje inicialmente 
-// enviado. 
- 
- 
-// Se sugiere que el programa inicial cree un conjunto de procesos hijos, que deben 
-// ser organizados para formar un anillo. Por ejemplo, el hijo 1 recibe, del padre, el 
-// mensaje, lo incrementa y lo envía al hijo 2. Este último lo incrementa nuevamente y 
-// lo pasa al hijo 3, y así sucesivamente, hasta llegar al último hijo, que incrementa el 
-// valor por última vez y lo envía de vuelta al proceso padre. Este último debe mostrar 
-// el resultado final del proceso de comunicación en la salida estándar. 
- 
- 
-// Se espera que el programa pueda ejecutarse como:  
- 
-// ./anillo <n><c><s>,  
- 
-// donde: 
- 
-// <n> es la cantidad de procesos hijos del anillo. 
-// <c> es el valor del mensaje inicial. 
-// <s> es el número de proceso que inicia la comunicación 
- 
-// Les proveemos un archivo ring.c deberían trabajar sobre ese archivo pero 
-// sientanse libres de modificarlo e incluso hacer sus propias librerías.  
- 
- 
-// IMPORTANTE: para que les sirva como referencia la solución del problema 
-// programada por nosotros tiene del orden de 40 líneas de código.
+// pipes: array de n pipes; cada pipes[i][0] es lectura de i→i+1
+//          y pipes[i][1] es escritura de i→i+1
+// p_p2c: pipe padre→hijo inicial
+// p_c2p: pipe hijo inicial→padre
 
-void funcion_hijo(int pipes[2][2], int posicion, int n, int start, int pipe_padre[2]) {
+
+// función para cada hijo
+void hijo(int i, int n, int start,
+                  int pipes[][2],
+                  int p_p2c[2], int p_c2p[2]) {
     int valor;
-    
-    // Cerrar los extremos no utilizados de los pipes
-    if(posicion == 0) {
-        close(pipes[0][1]);
-        close(pipes[1][0]);
-    } else if(posicion == n-1) {
-        close(pipes[0][0]);
-        close(pipes[1][1]);
-    } else {
-        close(pipes[0][1]);
-        close(pipes[1][0]);
+    int prev = (i - 1 + n) % n;
+
+    // 1) Cerrar todos los extremos que NO usa este hijo
+    for(int j = 0; j < n; j++) {
+        // sólo leerá de pipes[prev][0] y escribirá en pipes[i][1]
+        if (j == prev) {
+            close(pipes[j][1]);
+        } else if (j == i) {
+            close(pipes[j][0]);
+        } else {
+            close(pipes[j][0]);
+            close(pipes[j][1]);
+        }
     }
 
-    // Cerrar extremo de escritura del pipe con el padre si no es el proceso inicial
-    if(posicion != start - 1) {
-        close(pipe_padre[1]);
-    }
-    close(pipe_padre[0]); // Todos cierran la lectura del pipe con el padre
+    // 2) Si es el iniciador, recibe del padre y al final le devuelve
+    if (i == start - 1) {
+        // cierra extremos que no necesita
+        close(p_p2c[1]);  // no escribe en p_p2c
+        close(p_c2p[0]);  // no lee de p_c2p
 
-    // Si este es el proceso que debe iniciar la comunicación
-    if(posicion == start - 1) {
-        // Leer el valor inicial del padre
-        read(pipe_padre[0], &valor, sizeof(int));
-        
-        // Incrementar el valor
+        // a) leer valor inicial
+        read(p_p2c[0], &valor, sizeof(valor));
+        close(p_p2c[0]);
+
+        // b) incrementar y pasar al siguiente
         valor++;
-        
-        // Enviar al siguiente proceso
-        write(pipes[1][1], &valor, sizeof(int));
-        
-        // Esperar a que el valor complete el ciclo
-        if(posicion == 0) {
-            read(pipes[0][0], &valor, sizeof(int));
-        } else {
-            read(pipes[1][0], &valor, sizeof(int));
-        }
-        
-        // Enviar resultado final al padre
-        write(pipe_padre[1], &valor, sizeof(int));
+        write(pipes[i][1], &valor, sizeof(valor));
+        close(pipes[i][1]);
+
+        // c) esperar que recorra todo el anillo
+        read(pipes[prev][0], &valor, sizeof(valor));
+        close(pipes[prev][0]);
+
+        // d) devolver resultado al padre
+        write(p_c2p[1], &valor, sizeof(valor));
+        close(p_c2p[1]);
+
     } else {
-        // Leer el valor del pipe anterior
-        if(posicion == 0) {
-            read(pipes[0][0], &valor, sizeof(int));
-        } else {
-            read(pipes[1][0], &valor, sizeof(int));
-        }
+        // 3) Procesos intermedios (o el último): leen, incrementan y escriben
+        read(pipes[prev][0], &valor, sizeof(valor));
+        close(pipes[prev][0]);
 
-        // Incrementar el valor
         valor++;
-
-        // Escribir el valor en el siguiente pipe
-        if(posicion == n-1) {
-            write(pipes[0][1], &valor, sizeof(int));
-        } else {
-            write(pipes[1][1], &valor, sizeof(int));
-        }
+        write(pipes[i][1], &valor, sizeof(valor));
+        close(pipes[i][1]);
     }
 
     exit(0);
 }
 
-void funcion_padre(int pipes[2][2], int buffer[1], int n, int start, int pipe_padre[2]) {
-    int status;
-    
-    // Cerrar extremo de lectura del pipe con los hijos
-    close(pipe_padre[1]);
-    
-    // Enviar el valor inicial al proceso que debe comenzar
-    write(pipe_padre[0], buffer, sizeof(int));
+// función del padre
+void padre(int n, int initial_value, int start,
+                   int pipes[][2],
+                   int p_p2c[2], int p_c2p[2]) {
+    int status, resultado;
 
-    // Esperar el resultado final del proceso inicial
-    read(pipe_padre[1], buffer, sizeof(int));
-    printf("Resultado final: %d\n", buffer[0]);
+    // cerrar extremos que no usamos
+    close(p_p2c[0]);   // no leemos de p_p2c
+    close(p_c2p[1]);   // no escribimos en p_c2p
 
-    // Esperar a que todos los procesos hijos terminen
+    // 1) enviar al hijo iniciador
+    write(p_p2c[1], &initial_value, sizeof(initial_value));
+    close(p_p2c[1]);
+
+    // 2) esperar resultado
+    read(p_c2p[0], &resultado, sizeof(resultado));
+    close(p_c2p[0]);
+
+    printf("Resultado final: %d\n", resultado);
+
+    // 3) esperar a todos los hijos
     for(int i = 0; i < n; i++) {
         wait(&status);
     }
 }
 
-int main(int argc, char **argv)
-{	
-	int start, pid, n;
-	int buffer[1];
-	int pipes[2][2];  // Array para almacenar los pipes
-    int pipe_padre[2]; // Pipe para comunicación con el proceso inicial
+int main(int argc, char **argv) {
+    if (argc != 4) {
+        fprintf(stderr, "Uso: %s <n> <c> <s>\n", argv[0]);
+        exit(1);
+    }
 
-	if (argc != 4){ printf("Uso: anillo <n> <c> <s> \n"); exit(0);}
-    
-    /* Parsing of arguments */
-    n = atoi(argv[1]);
-    buffer[0] = atoi(argv[2]);
-    start = atoi(argv[3]);
-    
-    if(n < 3) {
-        printf("Error: se requieren al menos 3 procesos para formar el anillo\n");
+    int n     = atoi(argv[1]);
+    int c     = atoi(argv[2]);
+    int start = atoi(argv[3]);
+
+    if (n < 3) {
+        fprintf(stderr, "Error: se requieren al menos 3 procesos para el anillo\n");
         exit(1);
     }
-    
-    if(start < 1 || start > n) {
-        printf("Error: el proceso inicial debe estar entre 1 y %d\n", n);
+    if (start < 1 || start > n) {
+        fprintf(stderr, "Error: proceso inicial debe estar en [1..%d]\n", n);
         exit(1);
     }
-    
-    printf("Se crearán %i procesos, se enviará el valor %i desde proceso %i \n", n, buffer[0], start);
-    
-    // Crear los pipes necesarios
-    for(int i = 0; i < 2; i++) {
-        if(pipe(pipes[i]) == -1) {
-            perror("Error al crear pipe");
+
+    printf("Se crearán %d procesos, se enviará %d desde proceso %d\n",
+           n, c, start);
+
+    // 1) crear los n pipes del anillo
+    int pipes[n][2];
+    for (int i = 0; i < n; i++) {
+        if (pipe(pipes[i]) == -1) {
+            perror("pipe");
             exit(1);
         }
     }
-    
-    // Crear pipe para comunicación con el proceso inicial
-    if(pipe(pipe_padre) == -1) {
-        perror("Error al crear pipe");
+
+    // 2) crear los dos pipes padre<->hijo inicial
+    int p_p2c[2], p_c2p[2];
+    if (pipe(p_p2c) == -1 || pipe(p_c2p) == -1) {
+        perror("pipe padre-hijo");
         exit(1);
     }
 
-    // Crear los procesos hijos
-    for(int i = 0; i < n; i++) {
-        pid = fork();
-        if(pid == -1) {
-            perror("Error al crear proceso");
+    // 3) fork de los n hijos
+    for (int i = 0; i < n; i++) {
+        pid_t pid = fork();
+        if (pid < 0) {
+            perror("fork");
             exit(1);
         }
-        if(pid == 0) {  // Proceso hijo
-            funcion_hijo(pipes, i, n, start, pipe_padre);
+        if (pid == 0) {
+            hijo(i, n, start, pipes, p_p2c, p_c2p);
         }
     }
 
-    // Proceso padre
-    funcion_padre(pipes, buffer, n, start, pipe_padre);
-
+    // 4) código del padre: lanzar la comunicación y recoger el resultado
+    padre(n, c, start, pipes, p_p2c, p_c2p);
     return 0;
 }
