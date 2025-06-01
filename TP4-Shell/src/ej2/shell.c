@@ -321,7 +321,7 @@ void padre(int pipes[][2], int command_count, char *commands[]) {
 }
 
 int main() {
-    char command[256];
+    char command[4096]; //tuve que agrandar el tamaño del comando para poder probar que aguanta 200 comandos.
     char *commands[MAX_COMMANDS];
     int command_count = 0;
 
