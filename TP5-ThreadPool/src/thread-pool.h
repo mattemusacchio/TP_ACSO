@@ -15,6 +15,9 @@
 #include <thread>      // for thread
 #include <vector>      // for vector
 #include "Semaphore.h" // for Semaphore
+#include <queue>       // for queue
+#include <mutex>       // for mutex
+#include <condition_variable> // for condition_variable
 
 using namespace std;
 
@@ -29,11 +32,14 @@ using namespace std;
  * worker to process.
  */
 typedef struct worker {
-    thread ts;
-    function<void(void)> thunk;
-    /**
-     * Complete the definition of the worker_t struct here...
-     **/
+    thread ts;                     // El thread del worker
+    function<void(void)> thunk;    // La tarea a ejecutar
+    bool available;                // Indica si el worker está disponible
+    Semaphore sem{0};             // Semáforo para sincronización, inicializado en 0
+    int id;                        // Identificador único del worker
+    bool active;                   // Indica si el worker está activo
+
+    worker() : available(true), active(true), id(0) {}  // Constructor por defecto
 } worker_t;
 
 class ThreadPool {
@@ -71,9 +77,19 @@ class ThreadPool {
     void worker(int id);
     void dispatcher();
     thread dt;                              // dispatcher thread handle
-    vector<worker_t> wts;                   // worker thread handles. you may want to change/remove this
+    vector<worker_t> wts;                   // worker thread handles
     bool done;                              // flag to indicate the pool is being destroyed
     mutex queueLock;                        // mutex to protect the queue of tasks
+    
+    // Variables privadas necesarias
+    queue<function<void(void)>> taskQueue;  // cola de tareas pendientes
+    Semaphore queueSem;                     // semáforo para la cola de tareas
+    Semaphore workerAvailableSem{0};        // semáforo para señalizar workers disponibles
+    size_t numThreads;                      // número de threads en el pool
+    mutex waitLock;                         // mutex para wait()
+    condition_variable waitCV;              // variable de condición para wait()
+    size_t pendingTasks;                    // contador de tareas pendientes
+    size_t availableWorkers;                // contador de workers disponibles
 
     /* It is incomplete, there should be more private variables to manage the structures... 
     * *
