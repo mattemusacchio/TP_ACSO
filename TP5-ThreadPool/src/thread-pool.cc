@@ -15,3 +15,6 @@ void ThreadPool::schedule(const function<void(void)>& thunk) {}
 void ThreadPool::wait() {}
 
 ThreadPool::~ThreadPool() {}
+
+
+// metodos dispatcher y worker
