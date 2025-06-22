@@ -5,6 +5,7 @@
  */
 
 #include "thread-pool.h"
+#include <chrono>
 using namespace std;
 
 // constructor
@@ -21,6 +22,7 @@ ThreadPool::ThreadPool(size_t numThreads)
         wts[i].id = i;
         wts[i].available = true;
         wts[i].ts = thread(&ThreadPool::worker, this, i);
+        availableWorkerQueue.push(i);  // Agregar worker a la cola de disponibles
         workerAvailableSem.signal();  // Señalizar que hay un worker disponible
     }
     
@@ -28,79 +30,113 @@ ThreadPool::ThreadPool(size_t numThreads)
     dt = thread(&ThreadPool::dispatcher, this);
 }
 
+// producer
 void ThreadPool::schedule(const function<void(void)>& thunk) {
-    lock_guard<mutex> lock(queueLock);
-    taskQueue.push(thunk);
-    pendingTasks++;
+    if (done) {
+        throw runtime_error("ThreadPool has been destroyed");
+    }
+    
+    if (!thunk) {
+        throw runtime_error("Cannot schedule nullptr function");
+    }
+    
+    {
+        lock_guard<mutex> lock(queueLock);
+        taskQueue.push(thunk);
+    }
+    pendingTasks++;  // Incremento atómico
     queueSem.signal();
 }
 
 void ThreadPool::wait() {
     unique_lock<mutex> lock(waitLock);
-    waitCV.wait(lock, [this]() { return pendingTasks == 0; });
+    waitCV.wait(lock, [this]() { 
+        return pendingTasks == 0; 
+    });
 }
 
 void ThreadPool::worker(int id) {
     while (true) {
         wts[id].sem.wait();  // Esperar por una tarea
         
-        if (!wts[id].active) {
-            break;  // Worker debe terminar
+        {
+            lock_guard<mutex> lock(queueLock);
+            if (!wts[id].active) {
+                break;  // Worker debe terminar
+            }
         }
         
         // Ejecutar la tarea
-        wts[id].thunk();
+        function<void(void)> task_to_execute;
+        {
+            lock_guard<mutex> lock(queueLock);
+            task_to_execute = wts[id].thunk;  // Copiar la tarea localmente
+        }
+        task_to_execute();  // Ejecutar la tarea sin lock
         
         {
             lock_guard<mutex> lock(queueLock);
             wts[id].available = true;
-            availableWorkers++;
+        }
+        
+        availableWorkers++;  // Incremento atómico
+        
+        {
+            lock_guard<mutex> lock(workerQueueLock);
+            availableWorkerQueue.push(id);  // Agregar worker a la cola de disponibles
             workerAvailableSem.signal();  // Señalizar que hay un worker disponible
         }
         
-        {
+        // Decrementar pendingTasks y notificar si es necesario
+        size_t remaining = --pendingTasks;
+        if (remaining == 0) {
             lock_guard<mutex> lock(waitLock);
-            pendingTasks--;
-            if (pendingTasks == 0) {
-                waitCV.notify_all();
-            }
+            waitCV.notify_all();
         }
     }
 }
 
+// consumer
 void ThreadPool::dispatcher() {
     while (!done) {
         queueSem.wait();  // Esperar por tareas en la cola
         
-        if (done) break;
+        if (done) break;  // Verificar done después de despertar
         
         // Obtener una tarea de la cola
         function<void(void)> task;
         {
-            lock_guard<mutex> lock(queueLock);
-            if (!taskQueue.empty()) {
-                task = taskQueue.front();
-                taskQueue.pop();
+            unique_lock<mutex> lock(queueLock);
+            if (taskQueue.empty()) {
+                continue;  // No hay tareas, continuar al siguiente ciclo
             }
+            task = taskQueue.front();
+            taskQueue.pop();
         }
         
         // Esperar a que haya un worker disponible
         workerAvailableSem.wait();
         
-        // Buscar un worker disponible
-        bool assigned = false;
-        while (!assigned && !done) {
-            for (size_t i = 0; i < numThreads && !assigned; i++) {
-                lock_guard<mutex> lock(queueLock);
-                if (wts[i].available) {
-                    wts[i].available = false;
-                    availableWorkers--;
-                    wts[i].thunk = task;
-                    wts[i].sem.signal();
-                    assigned = true;
-                }
-            }
+        if (done) break;  // Verificar done nuevamente
+        
+        // Obtener un worker disponible de la cola
+        int worker_id;
+        {
+            lock_guard<mutex> lock(workerQueueLock);
+            worker_id = availableWorkerQueue.front();
+            availableWorkerQueue.pop();
         }
+        
+        // Asignar la tarea al worker
+        {
+            lock_guard<mutex> lock(queueLock);
+            wts[worker_id].available = false;
+            wts[worker_id].thunk = task;  // Asignar thunk bajo lock
+        }
+        
+        availableWorkers--;  // Decremento atómico
+        
+        wts[worker_id].sem.signal();
     }
 }
 
@@ -111,12 +147,16 @@ ThreadPool::~ThreadPool() {
     
     // Luego marcamos que el pool debe terminar
     done = true;
+    
     queueSem.signal();  // Despertar al dispatcher
     workerAvailableSem.signal(); // Por si el dispatcher está esperando un worker
     
     // Terminar todos los workers
     for (size_t i = 0; i < numThreads; i++) {
-        wts[i].active = false;
+        {
+            lock_guard<mutex> lock(queueLock);
+            wts[i].active = false;
+        }
         wts[i].sem.signal();
     }
     

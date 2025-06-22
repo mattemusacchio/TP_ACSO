@@ -18,6 +18,7 @@
 #include <queue>       // for queue
 #include <mutex>       // for mutex
 #include <condition_variable> // for condition_variable
+#include <atomic>      // for atomic
 
 using namespace std;
 
@@ -78,7 +79,7 @@ class ThreadPool {
     void dispatcher();
     thread dt;                              // dispatcher thread handle
     vector<worker_t> wts;                   // worker thread handles
-    bool done;                              // flag to indicate the pool is being destroyed
+    atomic<bool> done;                      // flag to indicate the pool is being destroyed
     mutex queueLock;                        // mutex to protect the queue of tasks
     
     // Variables privadas necesarias
@@ -88,8 +89,11 @@ class ThreadPool {
     size_t numThreads;                      // número de threads en el pool
     mutex waitLock;                         // mutex para wait()
     condition_variable waitCV;              // variable de condición para wait()
-    size_t pendingTasks;                    // contador de tareas pendientes
-    size_t availableWorkers;                // contador de workers disponibles
+    condition_variable taskCV;              // variable de condición para esperar tareas
+    atomic<size_t> pendingTasks;                    // contador de tareas pendientes
+    atomic<size_t> availableWorkers;                // contador de workers disponibles
+    queue<int> availableWorkerQueue;        // cola de workers disponibles para asignación O(1)
+    mutex workerQueueLock;                  // mutex para proteger la cola de workers
 
     /* It is incomplete, there should be more private variables to manage the structures... 
     * *

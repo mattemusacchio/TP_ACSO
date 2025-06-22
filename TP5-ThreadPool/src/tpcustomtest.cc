@@ -95,6 +95,26 @@ static void reuseThreadPoolTest() {
     pool.wait();
 }
 
+static void emptyQueueTest() {
+    ThreadPool pool(4);
+    
+    // Programamos una tarea que termina muy rápido
+    pool.schedule([] {});
+    
+    // Esperamos un poco para asegurarnos que la tarea se completó
+    sleep_for(1000);
+    
+    // En este punto la cola debería estar vacía
+    // Programamos una nueva tarea para verificar que el pool sigue funcionando
+    pool.schedule([] {
+        oslock.lock();
+        cout << "Task executed after empty queue test" << endl;
+        oslock.unlock();
+    });
+    
+    pool.wait();
+}
+
 struct testEntry {
     string flag;
     function<void(void)> testfn;
@@ -106,6 +126,7 @@ static void buildMap(map<string, function<void(void)>>& testFunctionMap) {
         {"--single-thread-single-wait", singleThreadSingleWaitTest},
         {"--no-threads-double-wait", noThreadsDoubleWaitTest},
         {"--reuse-thread-pool", reuseThreadPoolTest},
+        {"--empty-queue", emptyQueueTest},
         {"--s", simpleTest},
     };
 
